@@ -2,9 +2,24 @@
   "name": "vscode-codex-session-manager",
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
-  "version": "0.1.13",
-  "publisher": "local-workspace",
+  "version": "0.1.14",
+  "publisher": "wangzhilin777",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wangzhilin777/vscode-codex-session-manager.git"
+  },
+  "homepage": "https://github.com/wangzhilin777/vscode-codex-session-manager",
+  "bugs": {
+    "url": "https://github.com/wangzhilin777/vscode-codex-session-manager/issues"
+  },
+  "keywords": [
+    "codex",
+    "openai",
+    "sessions",
+    "workspace",
+    "chat"
+  ],
   "engines": {
     "vscode": "^1.95.0"
   },

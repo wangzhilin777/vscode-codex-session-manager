@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.1.14
+
+- 将扩展发布者切换为 `wangzhilin777`，准备发布到 VS Code Marketplace。
+- 补充 Marketplace 所需的仓库、主页、问题反馈和关键词元数据。
+- 更新 README 与 LICENSE 中的发布信息。
+
 ## 0.1.13
 
 - 修复 app-server 数据源下本地重命名、置顶、未读、备注等右键操作刷新后不生效的问题。
