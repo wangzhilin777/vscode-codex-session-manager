@@ -106,7 +106,12 @@ export class SessionRepository {
 
     const sessions = rawDeduped
       .map((raw) =>
-        toSessionRecord(raw, metadataById[raw.id] ?? { alias: "", projectTag: "", note: "" }, currentRoots, resolveWorkspaceHint(raw.id, raw.cwd, hints))
+        toSessionRecord(
+          raw,
+          metadataById[raw.id] ?? { alias: "", projectTag: "", note: "", pinned: false, unread: false },
+          currentRoots,
+          resolveWorkspaceHint(raw.id, raw.cwd, hints)
+        )
       )
       .sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0));
     const visibleSessions = filterSessions(sessions, state);

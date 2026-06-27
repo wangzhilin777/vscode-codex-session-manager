@@ -17,7 +17,9 @@ export class MetadataStore {
     return {
       alias: value?.alias ?? "",
       projectTag: value?.projectTag ?? "",
-      note: value?.note ?? ""
+      note: value?.note ?? "",
+      pinned: value?.pinned ?? false,
+      unread: value?.unread ?? false
     };
   }
 
@@ -26,12 +28,20 @@ export class MetadataStore {
     const next: LocalSessionMetadata = {
       alias: patch.alias ?? current.alias,
       projectTag: patch.projectTag ?? current.projectTag,
-      note: patch.note ?? current.note
+      note: patch.note ?? current.note,
+      pinned: patch.pinned ?? current.pinned,
+      unread: patch.unread ?? current.unread
     };
 
     const map = this.getAll();
     map[sessionId] = next;
     await this.context.globalState.update(METADATA_STORAGE_KEY, map);
     return next;
+  }
+
+  public async delete(sessionId: string): Promise<void> {
+    const map = this.getAll();
+    delete map[sessionId];
+    await this.context.globalState.update(METADATA_STORAGE_KEY, map);
   }
 }

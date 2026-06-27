@@ -80,8 +80,13 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<TreeNode> {
     }
 
     const item = new vscode.TreeItem(`${SESSION_LABEL_PREFIX}${element.session.displayName}`, vscode.TreeItemCollapsibleState.None);
-    const stateLabel = element.session.archived ? `${t("archivedBadge")} · ` : "";
-    item.description = `${stateLabel}${element.session.sourceLabel} · ${formatRelativeTime(element.session.updatedAt)}`;
+    const stateLabels = [
+      element.session.archived ? t("archivedBadge") : "",
+      element.session.local.pinned ? t("pinnedBadge") : "",
+      element.session.local.unread ? t("unreadBadge") : ""
+    ].filter(Boolean);
+    const statePrefix = stateLabels.length > 0 ? `${stateLabels.join(" · ")} · ` : "";
+    item.description = `${statePrefix}${element.session.sourceLabel} · ${formatRelativeTime(element.session.updatedAt)}`;
     item.tooltip = new vscode.MarkdownString(
       [
         `**${element.session.displayName}**`,
@@ -104,7 +109,11 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<TreeNode> {
     };
     item.iconPath = element.session.archived
       ? new vscode.ThemeIcon("archive", new vscode.ThemeColor("charts.orange"))
-      : new vscode.ThemeIcon("comment-discussion");
+      : element.session.local.pinned
+        ? new vscode.ThemeIcon("pinned", new vscode.ThemeColor("charts.yellow"))
+        : element.session.local.unread
+          ? new vscode.ThemeIcon("circle-large-filled", new vscode.ThemeColor("charts.blue"))
+          : new vscode.ThemeIcon("comment-discussion");
     return item;
   }
 

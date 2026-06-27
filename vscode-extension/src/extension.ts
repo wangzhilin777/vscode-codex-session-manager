@@ -15,11 +15,11 @@ import {
 } from "./utils/officialCodex";
 import { configureLanguage, t } from "./utils/i18n";
 import { isPathInside, toDisplayPath } from "./utils/pathUtils";
+import { deleteSessionFile, unarchiveSessionFile } from "./utils/sessionFiles";
 import { SessionDetailsProvider } from "./view/sessionDetailsProvider";
 
 const PENDING_OPEN_AFTER_WORKSPACE_SWITCH_KEY = "pendingOpenAfterWorkspaceSwitch";
 const PENDING_OPEN_MAX_AGE_MS = 2 * 60 * 1000;
-const ROLLOUT_FILE_PATTERN = /^rollout-(\d{4})-(\d{2})-(\d{2})T.*-[0-9a-fA-F-]{36}\.jsonl$/;
 
 interface PendingOpenAfterWorkspaceSwitch {
   sessionId: string;
@@ -129,6 +129,31 @@ class SessionManagerController {
           this.cliService.resumeInTerminal(session);
         });
       }),
+      vscode.commands.registerCommand("codexSessions.forkInTerminal", async (node?: SessionNode) => {
+        const session = this.pickSession(node);
+        if (!session) {
+          return;
+        }
+        await this.runSafe(async () => {
+          this.cliService.forkInTerminal(session);
+        });
+      }),
+      vscode.commands.registerCommand("codexSessions.togglePinSession", async (node?: SessionNode) => {
+        const session = this.pickSession(node);
+        if (!session) {
+          return;
+        }
+        await this.metadataStore.update(session.sessionId, { pinned: !session.local.pinned });
+        await this.refresh();
+      }),
+      vscode.commands.registerCommand("codexSessions.toggleUnreadSession", async (node?: SessionNode) => {
+        const session = this.pickSession(node);
+        if (!session) {
+          return;
+        }
+        await this.metadataStore.update(session.sessionId, { unread: !session.local.unread });
+        await this.refresh();
+      }),
       vscode.commands.registerCommand("codexSessions.archiveSession", async (node?: SessionNode) => {
         const session = this.pickSession(node);
         if (!session) {
@@ -144,9 +169,44 @@ class SessionManagerController {
         if (!session) {
           return;
         }
+        const confirmed = await this.confirmSessionAction(
+          t("unarchiveSessionConfirmMessage", { title: session.displayName }),
+          t("unarchiveSessionConfirmButton")
+        );
+        if (!confirmed) {
+          return;
+        }
         await this.runSafe(async () => {
           await this.unarchiveSessionWithFallback(session);
           await this.refresh();
+        });
+      }),
+      vscode.commands.registerCommand("codexSessions.deleteSession", async (node?: SessionNode) => {
+        const session = this.pickSession(node);
+        if (!session) {
+          return;
+        }
+        if (!session.archived) {
+          await vscode.window.showWarningMessage(t("deleteOnlyArchived"));
+          return;
+        }
+        const confirmed = await this.confirmSessionAction(
+          t("deleteSessionConfirmMessage", { title: session.displayName }),
+          t("deleteSessionConfirmButton"),
+          t("deleteSessionConfirmDetail")
+        );
+        if (!confirmed) {
+          return;
+        }
+        await this.runSafe(async () => {
+          const deletedPath = deleteSessionFile(session, { codexHome: this.getCodexHome() });
+          if (!deletedPath) {
+            throw new Error(t("deleteSessionFailed", { sessionId: session.sessionId }));
+          }
+          this.output.appendLine(`[extension] deleted archived session ${session.sessionId}: ${deletedPath}`);
+          await this.metadataStore.delete(session.sessionId);
+          await this.refresh();
+          await vscode.window.showInformationMessage(t("deleteSessionSucceeded", { title: session.displayName }));
         });
       }),
       vscode.commands.registerCommand("codexSessions.copySessionId", async (node?: SessionNode) => {
@@ -155,6 +215,20 @@ class SessionManagerController {
           return;
         }
         await vscode.env.clipboard.writeText(session.sessionId);
+      }),
+      vscode.commands.registerCommand("codexSessions.copyWorkingDirectory", async (node?: SessionNode) => {
+        const session = this.pickSession(node);
+        if (!session) {
+          return;
+        }
+        await vscode.env.clipboard.writeText(session.cwd || session.workspaceRoot || "");
+      }),
+      vscode.commands.registerCommand("codexSessions.copyDeepLink", async (node?: SessionNode) => {
+        const session = this.pickSession(node);
+        if (!session) {
+          return;
+        }
+        await vscode.env.clipboard.writeText(buildOfficialCodexConversationUri(session.sessionId).toString());
       }),
       vscode.commands.registerCommand("codexSessions.copyResumeCommand", async (node?: SessionNode) => {
         const session = this.pickSession(node);
@@ -175,6 +249,34 @@ class SessionManagerController {
           await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(session.cwd), {
             forceNewWindow: false
           });
+        });
+      }),
+      vscode.commands.registerCommand("codexSessions.openSessionWorkspaceNewWindow", async (node?: SessionNode) => {
+        const session = this.pickSession(node);
+        const targetPath = session?.workspaceRoot || session?.cwd || "";
+        if (!targetPath) {
+          return;
+        }
+        await this.runSafe(async () => {
+          if (!fs.existsSync(targetPath)) {
+            throw new Error(t("workspacePathMissing", { path: targetPath }));
+          }
+          await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(targetPath), {
+            forceNewWindow: true
+          });
+        });
+      }),
+      vscode.commands.registerCommand("codexSessions.revealSessionWorkspace", async (node?: SessionNode) => {
+        const session = this.pickSession(node);
+        const targetPath = session?.workspaceRoot || session?.cwd || "";
+        if (!targetPath) {
+          return;
+        }
+        await this.runSafe(async () => {
+          if (!fs.existsSync(targetPath)) {
+            throw new Error(t("workspacePathMissing", { path: targetPath }));
+          }
+          await vscode.commands.executeCommand("revealFileInOS", vscode.Uri.file(targetPath));
         });
       }),
       vscode.commands.registerCommand("codexSessions.revealSessionFile", async (node?: SessionNode) => {
@@ -342,73 +444,20 @@ class SessionManagerController {
       this.output.appendLine(`[extension] cli unarchive failed, trying filesystem fallback: ${String(error)}`);
     }
 
-    const moved = this.unarchiveSessionFile(session);
+    const moved = unarchiveSessionFile(session, { codexHome: this.getCodexHome() });
     if (!moved) {
       throw new Error(t("unarchiveFailed", { sessionId: session.sessionId }));
     }
     this.output.appendLine(`[extension] filesystem unarchive fallback moved ${session.sessionId}`);
   }
 
-  private unarchiveSessionFile(session: SessionRecord): boolean {
-    const sourcePath = this.findArchivedSessionPath(session);
-    if (!sourcePath) {
-      return false;
-    }
-
-    const fileName = path.basename(sourcePath);
-    const match = fileName.match(ROLLOUT_FILE_PATTERN);
-    if (!match) {
-      return false;
-    }
-
-    const codexHome = this.settings.codexHomeOverride.trim() || path.join(os.homedir(), ".codex");
-    const sessionsRoot = path.resolve(codexHome, "sessions");
-    const targetDir = path.resolve(sessionsRoot, match[1] ?? "", match[2] ?? "", match[3] ?? "");
-    const targetPath = path.resolve(targetDir, fileName);
-
-    if (!isPathInside(targetPath, sessionsRoot) || !isPathInside(sourcePath, path.resolve(codexHome, "archived_sessions"))) {
-      return false;
-    }
-
-    fs.mkdirSync(targetDir, { recursive: true });
-    if (fs.existsSync(targetPath)) {
-      fs.rmSync(sourcePath, { force: true });
-      return true;
-    }
-
-    fs.renameSync(sourcePath, targetPath);
-    return true;
+  private getCodexHome(): string {
+    return this.settings.codexHomeOverride.trim() || path.join(os.homedir(), ".codex");
   }
 
-  private findArchivedSessionPath(session: SessionRecord): string {
-    if (session.path && fs.existsSync(session.path) && session.path.includes("archived_sessions")) {
-      return session.path;
-    }
-
-    const codexHome = this.settings.codexHomeOverride.trim() || path.join(os.homedir(), ".codex");
-    const archivedRoot = path.join(codexHome, "archived_sessions");
-    if (!fs.existsSync(archivedRoot)) {
-      return "";
-    }
-
-    const stack = [archivedRoot];
-    while (stack.length > 0) {
-      const current = stack.pop();
-      if (!current) {
-        continue;
-      }
-      for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-        const resolved = path.join(current, entry.name);
-        if (entry.isDirectory()) {
-          stack.push(resolved);
-          continue;
-        }
-        if (entry.isFile() && entry.name.includes(session.sessionId) && entry.name.endsWith(".jsonl")) {
-          return resolved;
-        }
-      }
-    }
-    return "";
+  private async confirmSessionAction(message: string, confirmLabel: string, detail?: string): Promise<boolean> {
+    const selected = await vscode.window.showWarningMessage(message, { modal: true, detail }, confirmLabel);
+    return selected === confirmLabel;
   }
 
   private currentWindowContainsWorkspace(workspacePath: string): boolean {

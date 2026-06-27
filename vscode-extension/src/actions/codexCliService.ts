@@ -30,6 +30,13 @@ export class CodexCliService {
     terminal.sendText(command, true);
   }
 
+  public forkInTerminal(session: SessionRecord): void {
+    const terminal = this.ensureTerminal(session.cwd || undefined);
+    const command = `${this.settings.codexCliPath} fork ${quoteArgument(session.sessionId)}`;
+    terminal.show(true);
+    terminal.sendText(command, true);
+  }
+
   public async archive(session: SessionRecord): Promise<void> {
     await this.run(["archive", session.sessionId]);
   }

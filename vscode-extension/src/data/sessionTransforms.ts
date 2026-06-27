@@ -174,6 +174,8 @@ export function filterSessions(sessions: readonly SessionRecord[], state: Sessio
       session.local.alias,
       session.local.projectTag,
       session.local.note,
+      session.local.pinned ? "pinned" : "",
+      session.local.unread ? "unread" : "",
       session.sessionId,
       session.cwd,
       session.projectKey,
@@ -212,7 +214,12 @@ function sortBuckets(values: Iterable<ProjectBucket>): ProjectBucket[] {
 }
 
 function sortSessions(sessions: SessionRecord[]): SessionRecord[] {
-  return sessions.sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0));
+  return sessions.sort((left, right) => {
+    if (left.local.pinned !== right.local.pinned) {
+      return left.local.pinned ? -1 : 1;
+    }
+    return (right.updatedAt ?? 0) - (left.updatedAt ?? 0);
+  });
 }
 
 export function buildGroups(sessions: readonly SessionRecord[]): SessionGroup[] {

@@ -31,6 +31,8 @@ export interface LocalSessionMetadata {
   alias: string;
   projectTag: string;
   note: string;
+  pinned?: boolean;
+  unread?: boolean;
 }
 
 export interface Logger {

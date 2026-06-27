@@ -2,7 +2,7 @@
   "name": "vscode-codex-session-manager",
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "publisher": "local-workspace",
   "license": "MIT",
   "engines": {
@@ -18,7 +18,16 @@
     "onCommand:codexSessions.toggleCurrentProjectOnly",
     "onCommand:codexSessions.showCurrentWorkspace",
     "onCommand:codexSessions.showAllWorkspaces",
-    "onCommand:codexSessions.toggleArchived"
+    "onCommand:codexSessions.toggleArchived",
+    "onCommand:codexSessions.unarchiveSession",
+    "onCommand:codexSessions.deleteSession",
+    "onCommand:codexSessions.togglePinSession",
+    "onCommand:codexSessions.toggleUnreadSession",
+    "onCommand:codexSessions.copyWorkingDirectory",
+    "onCommand:codexSessions.copyDeepLink",
+    "onCommand:codexSessions.revealSessionWorkspace",
+    "onCommand:codexSessions.openSessionWorkspaceNewWindow",
+    "onCommand:codexSessions.forkInTerminal"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -87,7 +96,8 @@
       },
       {
         "command": "codexSessions.setAlias",
-        "title": "%command.setAlias.title%"
+        "title": "%command.setAlias.title%",
+        "icon": "$(edit)"
       },
       {
         "command": "codexSessions.setProjectTag",
@@ -103,16 +113,48 @@
         "icon": "$(terminal)"
       },
       {
+        "command": "codexSessions.forkInTerminal",
+        "title": "%command.forkInTerminal.title%",
+        "icon": "$(git-branch)"
+      },
+      {
+        "command": "codexSessions.togglePinSession",
+        "title": "%command.togglePinSession.title%",
+        "icon": "$(pinned)"
+      },
+      {
+        "command": "codexSessions.toggleUnreadSession",
+        "title": "%command.toggleUnreadSession.title%",
+        "icon": "$(circle-large-filled)"
+      },
+      {
         "command": "codexSessions.archiveSession",
-        "title": "%command.archiveSession.title%"
+        "title": "%command.archiveSession.title%",
+        "icon": "$(archive)"
       },
       {
         "command": "codexSessions.unarchiveSession",
-        "title": "%command.unarchiveSession.title%"
+        "title": "%command.unarchiveSession.title%",
+        "icon": "$(reply)"
+      },
+      {
+        "command": "codexSessions.deleteSession",
+        "title": "%command.deleteSession.title%",
+        "icon": "$(trash)"
       },
       {
         "command": "codexSessions.copySessionId",
         "title": "%command.copySessionId.title%"
+      },
+      {
+        "command": "codexSessions.copyWorkingDirectory",
+        "title": "%command.copyWorkingDirectory.title%",
+        "icon": "$(folder)"
+      },
+      {
+        "command": "codexSessions.copyDeepLink",
+        "title": "%command.copyDeepLink.title%",
+        "icon": "$(link)"
       },
       {
         "command": "codexSessions.copyResumeCommand",
@@ -121,6 +163,16 @@
       {
         "command": "codexSessions.openSessionWorkspace",
         "title": "%command.openSessionWorkspace.title%"
+      },
+      {
+        "command": "codexSessions.openSessionWorkspaceNewWindow",
+        "title": "%command.openSessionWorkspaceNewWindow.title%",
+        "icon": "$(empty-window)"
+      },
+      {
+        "command": "codexSessions.revealSessionWorkspace",
+        "title": "%command.revealSessionWorkspace.title%",
+        "icon": "$(folder-opened)"
       },
       {
         "command": "codexSessions.revealSessionFile",
@@ -184,22 +236,32 @@
         {
           "command": "codexSessions.setAlias",
           "when": "view == codexSessions.tree && viewItem == session",
-          "group": "edit@1"
+          "group": "manage@2"
         },
         {
           "command": "codexSessions.setProjectTag",
           "when": "view == codexSessions.tree && viewItem == session",
-          "group": "edit@2"
+          "group": "edit@1"
         },
         {
           "command": "codexSessions.setNote",
           "when": "view == codexSessions.tree && viewItem == session",
-          "group": "edit@3"
+          "group": "edit@2"
+        },
+        {
+          "command": "codexSessions.togglePinSession",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "manage@1"
         },
         {
           "command": "codexSessions.archiveSession",
           "when": "view == codexSessions.tree && viewItem == session",
-          "group": "manage@1"
+          "group": "manage@3"
+        },
+        {
+          "command": "codexSessions.toggleUnreadSession",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "manage@4"
         },
         {
           "command": "codexSessions.unarchiveSession",
@@ -207,24 +269,54 @@
           "group": "manage@1"
         },
         {
-          "command": "codexSessions.copySessionId",
-          "when": "view == codexSessions.tree && viewItem == session",
-          "group": "copy@1"
+          "command": "codexSessions.deleteSession",
+          "when": "view == codexSessions.tree && viewItem == sessionArchived",
+          "group": "manage@2"
         },
         {
-          "command": "codexSessions.copyResumeCommand",
+          "command": "codexSessions.copySessionId",
           "when": "view == codexSessions.tree && viewItem == session",
           "group": "copy@2"
         },
         {
-          "command": "codexSessions.openSessionWorkspace",
+          "command": "codexSessions.copyWorkingDirectory",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "copy@1"
+        },
+        {
+          "command": "codexSessions.copyDeepLink",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "copy@3"
+        },
+        {
+          "command": "codexSessions.copyResumeCommand",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "copy@4"
+        },
+        {
+          "command": "codexSessions.revealSessionWorkspace",
           "when": "view == codexSessions.tree && viewItem == session",
           "group": "open@2"
         },
         {
-          "command": "codexSessions.revealSessionFile",
+          "command": "codexSessions.openSessionWorkspace",
           "when": "view == codexSessions.tree && viewItem == session",
           "group": "open@3"
+        },
+        {
+          "command": "codexSessions.openSessionWorkspaceNewWindow",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "open@4"
+        },
+        {
+          "command": "codexSessions.revealSessionFile",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "open@5"
+        },
+        {
+          "command": "codexSessions.forkInTerminal",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "fork@1"
         },
         {
           "command": "codexSessions.openInOfficialCodex",
@@ -239,22 +331,42 @@
         {
           "command": "codexSessions.copySessionId",
           "when": "view == codexSessions.tree && viewItem == sessionArchived",
+          "group": "copy@2"
+        },
+        {
+          "command": "codexSessions.copyWorkingDirectory",
+          "when": "view == codexSessions.tree && viewItem == sessionArchived",
           "group": "copy@1"
+        },
+        {
+          "command": "codexSessions.copyDeepLink",
+          "when": "view == codexSessions.tree && viewItem == sessionArchived",
+          "group": "copy@3"
         },
         {
           "command": "codexSessions.copyResumeCommand",
           "when": "view == codexSessions.tree && viewItem == sessionArchived",
-          "group": "copy@2"
+          "group": "copy@4"
         },
         {
-          "command": "codexSessions.openSessionWorkspace",
+          "command": "codexSessions.revealSessionWorkspace",
           "when": "view == codexSessions.tree && viewItem == sessionArchived",
           "group": "open@2"
         },
         {
-          "command": "codexSessions.revealSessionFile",
+          "command": "codexSessions.openSessionWorkspace",
           "when": "view == codexSessions.tree && viewItem == sessionArchived",
           "group": "open@3"
+        },
+        {
+          "command": "codexSessions.openSessionWorkspaceNewWindow",
+          "when": "view == codexSessions.tree && viewItem == sessionArchived",
+          "group": "open@4"
+        },
+        {
+          "command": "codexSessions.revealSessionFile",
+          "when": "view == codexSessions.tree && viewItem == sessionArchived",
+          "group": "open@5"
         }
       ]
     },

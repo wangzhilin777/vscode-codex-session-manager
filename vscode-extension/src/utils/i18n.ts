@@ -8,6 +8,12 @@ type MessageKey =
   | "currentGroupDescription"
   | "currentGroupLabel"
   | "desktopAppSourceLabel"
+  | "deleteOnlyArchived"
+  | "deleteSessionConfirmButton"
+  | "deleteSessionConfirmDetail"
+  | "deleteSessionConfirmMessage"
+  | "deleteSessionFailed"
+  | "deleteSessionSucceeded"
   | "execSourceLabel"
   | "filesystemSourceLabel"
   | "fallbackActive"
@@ -20,6 +26,7 @@ type MessageKey =
   | "otherGroupDescription"
   | "otherGroupLabel"
   | "projectLabel"
+  | "pinnedBadge"
   | "searchLabel"
   | "showAllWorkspacesMessage"
   | "showCurrentWorkspaceMessage"
@@ -31,6 +38,9 @@ type MessageKey =
   | "unknownGroupDescription"
   | "unknownGroupLabel"
   | "unknownSourceLabel"
+  | "unarchiveSessionConfirmButton"
+  | "unarchiveSessionConfirmMessage"
+  | "unreadBadge"
   | "updatedLabel"
   | "workspacePathMissing";
 
@@ -44,6 +54,12 @@ const en: Record<MessageKey, string> = {
   currentGroupDescription: "Sessions matched to the current workspace",
   currentGroupLabel: "Current Workspace",
   desktopAppSourceLabel: "Desktop App",
+  deleteOnlyArchived: "Only archived sessions can be deleted from this view.",
+  deleteSessionConfirmButton: "Delete Session",
+  deleteSessionConfirmDetail: "This removes the local Codex session file from CODEX_HOME. This operation cannot be undone.",
+  deleteSessionConfirmMessage: "Delete archived session \"{title}\"?",
+  deleteSessionFailed: "Failed to delete session {sessionId}. The session file was not found under CODEX_HOME.",
+  deleteSessionSucceeded: "Deleted archived session \"{title}\".",
   execSourceLabel: "Exec",
   filesystemSourceLabel: "Filesystem",
   fallbackActive: "fallback active",
@@ -56,6 +72,7 @@ const en: Record<MessageKey, string> = {
   otherGroupDescription: "Sessions from other workspaces or historical projects",
   otherGroupLabel: "Other Workspaces",
   projectLabel: "Project",
+  pinnedBadge: "Pinned",
   searchLabel: "search",
   showAllWorkspacesMessage: "Showing all workspaces.",
   showCurrentWorkspaceMessage: "Showing the current workspace.",
@@ -67,6 +84,9 @@ const en: Record<MessageKey, string> = {
   unknownGroupDescription: "Sessions without a usable path or project mapping",
   unknownGroupLabel: "Uncategorized",
   unknownSourceLabel: "Unknown",
+  unarchiveSessionConfirmButton: "Unarchive",
+  unarchiveSessionConfirmMessage: "Unarchive session \"{title}\"?",
+  unreadBadge: "Unread",
   updatedLabel: "Updated",
   workspacePathMissing: "workspace path not found: {path}"
 };
@@ -81,6 +101,12 @@ const zh: Record<MessageKey, string> = {
   currentGroupDescription: "当前工作区命中的会话",
   currentGroupLabel: "本工作区",
   desktopAppSourceLabel: "桌面端",
+  deleteOnlyArchived: "当前视图只允许删除已归档会话。",
+  deleteSessionConfirmButton: "删除会话",
+  deleteSessionConfirmDetail: "这会删除 CODEX_HOME 下的本地 Codex 会话文件，操作不可撤销。",
+  deleteSessionConfirmMessage: "确定删除已归档会话“{title}”吗？",
+  deleteSessionFailed: "删除会话 {sessionId} 失败：未在 CODEX_HOME 下找到对应会话文件。",
+  deleteSessionSucceeded: "已删除归档会话“{title}”。",
   execSourceLabel: "执行会话",
   filesystemSourceLabel: "本地文件",
   fallbackActive: "已启用兜底",
@@ -93,6 +119,7 @@ const zh: Record<MessageKey, string> = {
   otherGroupDescription: "其他工作区或历史项目",
   otherGroupLabel: "其他工作区",
   projectLabel: "项目",
+  pinnedBadge: "已置顶",
   searchLabel: "搜索",
   showAllWorkspacesMessage: "已显示全部工作区。",
   showCurrentWorkspaceMessage: "已显示本工作区。",
@@ -104,6 +131,9 @@ const zh: Record<MessageKey, string> = {
   unknownGroupDescription: "缺少路径或无法归属项目",
   unknownGroupLabel: "未归类",
   unknownSourceLabel: "未知",
+  unarchiveSessionConfirmButton: "取消归档",
+  unarchiveSessionConfirmMessage: "确定取消归档会话“{title}”吗？",
+  unreadBadge: "未读",
   updatedLabel: "更新",
   workspacePathMissing: "工作区路径不存在：{path}"
 };
