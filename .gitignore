@@ -5,3 +5,4 @@ dist/
 *.vsix
 npm-debug.log*
 *.log
+docs/00_当前执行计划追踪.md

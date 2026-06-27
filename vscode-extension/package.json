@@ -2,7 +2,7 @@
   "name": "vscode-codex-session-manager",
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "publisher": "local-workspace",
   "license": "MIT",
   "engines": {
@@ -77,11 +77,13 @@
       },
       {
         "command": "codexSessions.openDetails",
-        "title": "%command.openDetails.title%"
+        "title": "%command.openDetails.title%",
+        "icon": "$(book)"
       },
       {
         "command": "codexSessions.openInOfficialCodex",
-        "title": "%command.openInOfficialCodex.title%"
+        "title": "%command.openInOfficialCodex.title%",
+        "icon": "$(rocket)"
       },
       {
         "command": "codexSessions.setAlias",
@@ -97,7 +99,8 @@
       },
       {
         "command": "codexSessions.resumeInTerminal",
-        "title": "%command.resumeInTerminal.title%"
+        "title": "%command.resumeInTerminal.title%",
+        "icon": "$(terminal)"
       },
       {
         "command": "codexSessions.archiveSession",
@@ -171,12 +174,12 @@
         {
           "command": "codexSessions.openDetails",
           "when": "view == codexSessions.tree && viewItem == session",
-          "group": "inline@2"
+          "group": "open@1"
         },
         {
           "command": "codexSessions.resumeInTerminal",
           "when": "view == codexSessions.tree && viewItem == session",
-          "group": "inline@3"
+          "group": "inline@2"
         },
         {
           "command": "codexSessions.setAlias",
@@ -216,12 +219,12 @@
         {
           "command": "codexSessions.openSessionWorkspace",
           "when": "view == codexSessions.tree && viewItem == session",
-          "group": "open@1"
+          "group": "open@2"
         },
         {
           "command": "codexSessions.revealSessionFile",
           "when": "view == codexSessions.tree && viewItem == session",
-          "group": "open@2"
+          "group": "open@3"
         },
         {
           "command": "codexSessions.openInOfficialCodex",
@@ -231,7 +234,7 @@
         {
           "command": "codexSessions.openDetails",
           "when": "view == codexSessions.tree && viewItem == sessionArchived",
-          "group": "inline@2"
+          "group": "open@1"
         },
         {
           "command": "codexSessions.copySessionId",
@@ -246,12 +249,12 @@
         {
           "command": "codexSessions.openSessionWorkspace",
           "when": "view == codexSessions.tree && viewItem == sessionArchived",
-          "group": "open@1"
+          "group": "open@2"
         },
         {
           "command": "codexSessions.revealSessionFile",
           "when": "view == codexSessions.tree && viewItem == sessionArchived",
-          "group": "open@2"
+          "group": "open@3"
         }
       ]
     },
