@@ -128,6 +128,88 @@ test("filesystem provider includes rollout files even when metadata is incomplet
   assert.equal(typeof sessions[0]?.updatedAt, "number");
 });
 
+test("filesystem provider derives a title from rollout user messages when index is missing", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-manager-"));
+  const sessionsDir = path.join(root, "sessions", "2026", "06", "28");
+  fs.mkdirSync(sessionsDir, { recursive: true });
+
+  const sessionId = "019f098d-7192-7333-8d97-e3d56ba6b50b";
+  fs.writeFileSync(
+    path.join(sessionsDir, `rollout-2026-06-27T22-48-17-${sessionId}.jsonl`),
+    [
+      JSON.stringify({
+        type: "session_meta",
+        payload: {
+          id: sessionId,
+          cwd: "E:\\Workspace\\VSCode\\test",
+          source: "vscode"
+        }
+      }),
+      JSON.stringify({
+        type: "response_item",
+        payload: {
+          type: "message",
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: "# AGENTS.md instructions\n\n<INSTRUCTIONS>not a title</INSTRUCTIONS>"
+            }
+          ]
+        }
+      }),
+      JSON.stringify({
+        type: "event_msg",
+        payload: {
+          type: "user_message",
+          message: "vscode codex插件和codex桌面端会话内容是分开的吗？"
+        }
+      })
+    ].join("\n"),
+    "utf8"
+  );
+
+  const provider = new CodexFilesystemProvider({
+    codexHome: root,
+    logger: makeLogger()
+  });
+
+  const sessions = provider.listSessions();
+
+  assert.equal(sessions.length, 1);
+  assert.equal(sessions[0]?.preview, "vscode codex插件和codex桌面端会话内容是分开的吗？");
+});
+
+test("filesystem provider derives a title from Codex image request wrappers", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-manager-"));
+  const sessionsDir = path.join(root, "sessions", "2026", "06", "28");
+  fs.mkdirSync(sessionsDir, { recursive: true });
+
+  const sessionId = "019f098d-7192-7333-8d97-e3d56ba6b50c";
+  fs.writeFileSync(
+    path.join(sessionsDir, `rollout-2026-06-28T22-48-17-${sessionId}.jsonl`),
+    `${JSON.stringify({
+      type: "event_msg",
+      payload: {
+        type: "user_message",
+        message:
+          "\n# Files mentioned by the user:\n\n## a.png: C:/a.png\n\n## My request for Codex:\n这个显示不一致，是因为桌面端还没退出吗？\n<image name=[Image #1] path=\"C:\\a.png\">"
+      }
+    })}\n`,
+    "utf8"
+  );
+
+  const provider = new CodexFilesystemProvider({
+    codexHome: root,
+    logger: makeLogger()
+  });
+
+  const sessions = provider.listSessions();
+
+  assert.equal(sessions.length, 1);
+  assert.equal(sessions[0]?.preview, "这个显示不一致，是因为桌面端还没退出吗？");
+});
+
 test("filesystem provider sorts unindexed rollout files by file timestamp fallback", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-manager-"));
   const sessionsDir = path.join(root, "sessions", "2026", "06", "28");

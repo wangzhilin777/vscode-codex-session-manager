@@ -118,6 +118,75 @@ function parseSessionIdFromPath(filePath: string): string {
   return match?.[1] ?? "";
 }
 
+function textFromContentItem(item: unknown): string {
+  if (!item || typeof item !== "object") {
+    return "";
+  }
+  const typed = item as Record<string, unknown>;
+  return typeof typed.text === "string" ? typed.text : "";
+}
+
+function normalizeUserTitleCandidate(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  const requestMarker = "## My request for Codex:";
+  const requestIndex = trimmed.indexOf(requestMarker);
+  const candidate = requestIndex >= 0 ? trimmed.slice(requestIndex + requestMarker.length) : trimmed;
+  const withoutImageTags = candidate.replace(/<image[\s\S]*$/i, "").trim();
+  const firstUsefulLine = withoutImageTags
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.length > 0);
+
+  if (!firstUsefulLine) {
+    return "";
+  }
+
+  const skippedPrefixes = [
+    "# AGENTS.md instructions",
+    "<environment_context>",
+    "<turn_aborted>",
+    "<permissions instructions>",
+    "<collaboration_mode>",
+    "<apps_instructions>",
+    "<skills_instructions>",
+    "<plugins_instructions>"
+  ];
+  if (skippedPrefixes.some((prefix) => firstUsefulLine.startsWith(prefix))) {
+    return "";
+  }
+
+  return firstUsefulLine.replace(/^#+\s*/, "").replace(/\s+/g, " ").trim();
+}
+
+function parseUserTitleFromRows(rows: Array<Record<string, unknown>>): string {
+  for (const row of rows.slice(0, 300)) {
+    const payload = row.payload as Record<string, unknown> | undefined;
+    if (!payload) {
+      continue;
+    }
+
+    if (payload.type === "user_message" && typeof payload.message === "string") {
+      const title = normalizeUserTitleCandidate(payload.message);
+      if (title) {
+        return title;
+      }
+    }
+
+    if (payload.type === "message" && payload.role === "user" && Array.isArray(payload.content)) {
+      const title = normalizeUserTitleCandidate(payload.content.map(textFromContentItem).filter(Boolean).join("\n"));
+      if (title) {
+        return title;
+      }
+    }
+  }
+
+  return "";
+}
+
 function fileTimestamp(filePath: string): number | null {
   try {
     const stat = fs.statSync(filePath);
@@ -265,7 +334,7 @@ export class CodexFilesystemProvider {
       fileMap.set(id, {
         id,
         sessionId: id,
-        preview: "",
+        preview: parseUserTitleFromRows(rows),
         name: "",
         cwd: toDisplayPath(meta.cwd),
         path: toDisplayPath(filePath),
@@ -290,7 +359,7 @@ export class CodexFilesystemProvider {
       fileMap.set(id, {
         id,
         sessionId: id,
-        preview: "",
+        preview: parseUserTitleFromRows(rows),
         name: "",
         cwd: toDisplayPath(meta.cwd),
         path: toDisplayPath(filePath),
