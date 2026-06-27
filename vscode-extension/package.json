@@ -1,0 +1,337 @@
+{
+  "name": "vscode-codex-session-manager",
+  "displayName": "%extension.displayName%",
+  "description": "%extension.description%",
+  "version": "0.1.9",
+  "publisher": "local-workspace",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:codexSessions.tree",
+    "onCommand:codexSessions.refresh",
+    "onCommand:codexSessions.openInOfficialCodex",
+    "onCommand:codexSessions.toggleCurrentProjectOnly",
+    "onCommand:codexSessions.showCurrentWorkspace",
+    "onCommand:codexSessions.showAllWorkspaces",
+    "onCommand:codexSessions.toggleArchived"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codexSessions",
+          "title": "%viewsContainer.codexSessions.title%",
+          "icon": "resources/codex-sessions.svg"
+        }
+      ]
+    },
+    "views": {
+      "codexSessions": [
+        {
+          "id": "codexSessions.tree",
+          "name": "%view.codexSessions.tree.name%"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "codexSessions.refresh",
+        "title": "%command.refresh.title%",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "codexSessions.toggleCurrentProjectOnly",
+        "title": "%command.toggleCurrentProjectOnly.title%",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "codexSessions.showCurrentWorkspace",
+        "title": "%command.showCurrentWorkspace.title%",
+        "icon": "$(root-folder)"
+      },
+      {
+        "command": "codexSessions.showAllWorkspaces",
+        "title": "%command.showAllWorkspaces.title%",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "codexSessions.toggleArchived",
+        "title": "%command.toggleArchived.title%",
+        "icon": "$(archive)"
+      },
+      {
+        "command": "codexSessions.setSearchFilter",
+        "title": "%command.setSearchFilter.title%",
+        "icon": "$(search)"
+      },
+      {
+        "command": "codexSessions.clearSearchFilter",
+        "title": "%command.clearSearchFilter.title%",
+        "icon": "$(close)"
+      },
+      {
+        "command": "codexSessions.openDetails",
+        "title": "%command.openDetails.title%"
+      },
+      {
+        "command": "codexSessions.openInOfficialCodex",
+        "title": "%command.openInOfficialCodex.title%"
+      },
+      {
+        "command": "codexSessions.setAlias",
+        "title": "%command.setAlias.title%"
+      },
+      {
+        "command": "codexSessions.setProjectTag",
+        "title": "%command.setProjectTag.title%"
+      },
+      {
+        "command": "codexSessions.setNote",
+        "title": "%command.setNote.title%"
+      },
+      {
+        "command": "codexSessions.resumeInTerminal",
+        "title": "%command.resumeInTerminal.title%"
+      },
+      {
+        "command": "codexSessions.archiveSession",
+        "title": "%command.archiveSession.title%"
+      },
+      {
+        "command": "codexSessions.unarchiveSession",
+        "title": "%command.unarchiveSession.title%"
+      },
+      {
+        "command": "codexSessions.copySessionId",
+        "title": "%command.copySessionId.title%"
+      },
+      {
+        "command": "codexSessions.copyResumeCommand",
+        "title": "%command.copyResumeCommand.title%"
+      },
+      {
+        "command": "codexSessions.openSessionWorkspace",
+        "title": "%command.openSessionWorkspace.title%"
+      },
+      {
+        "command": "codexSessions.revealSessionFile",
+        "title": "%command.revealSessionFile.title%"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "codexSessions.refresh",
+          "when": "view == codexSessions.tree",
+          "group": "navigation@1"
+        },
+        {
+          "command": "codexSessions.showCurrentWorkspace",
+          "when": "view == codexSessions.tree && !codexSessions.currentProjectOnly",
+          "group": "navigation@2"
+        },
+        {
+          "command": "codexSessions.showAllWorkspaces",
+          "when": "view == codexSessions.tree && codexSessions.currentProjectOnly",
+          "group": "navigation@2"
+        },
+        {
+          "command": "codexSessions.toggleCurrentProjectOnly",
+          "when": "view == codexSessions.tree",
+          "group": "navigation@2.5"
+        },
+        {
+          "command": "codexSessions.toggleArchived",
+          "when": "view == codexSessions.tree",
+          "group": "navigation@3"
+        },
+        {
+          "command": "codexSessions.setSearchFilter",
+          "when": "view == codexSessions.tree",
+          "group": "navigation@4"
+        },
+        {
+          "command": "codexSessions.clearSearchFilter",
+          "when": "view == codexSessions.tree",
+          "group": "navigation@5"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "codexSessions.openInOfficialCodex",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "inline@1"
+        },
+        {
+          "command": "codexSessions.openDetails",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "inline@2"
+        },
+        {
+          "command": "codexSessions.resumeInTerminal",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "inline@3"
+        },
+        {
+          "command": "codexSessions.setAlias",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "edit@1"
+        },
+        {
+          "command": "codexSessions.setProjectTag",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "edit@2"
+        },
+        {
+          "command": "codexSessions.setNote",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "edit@3"
+        },
+        {
+          "command": "codexSessions.archiveSession",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "manage@1"
+        },
+        {
+          "command": "codexSessions.unarchiveSession",
+          "when": "view == codexSessions.tree && viewItem == sessionArchived",
+          "group": "manage@1"
+        },
+        {
+          "command": "codexSessions.copySessionId",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "copy@1"
+        },
+        {
+          "command": "codexSessions.copyResumeCommand",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "copy@2"
+        },
+        {
+          "command": "codexSessions.openSessionWorkspace",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "open@1"
+        },
+        {
+          "command": "codexSessions.revealSessionFile",
+          "when": "view == codexSessions.tree && viewItem == session",
+          "group": "open@2"
+        },
+        {
+          "command": "codexSessions.openInOfficialCodex",
+          "when": "view == codexSessions.tree && viewItem == sessionArchived",
+          "group": "inline@1"
+        },
+        {
+          "command": "codexSessions.openDetails",
+          "when": "view == codexSessions.tree && viewItem == sessionArchived",
+          "group": "inline@2"
+        },
+        {
+          "command": "codexSessions.copySessionId",
+          "when": "view == codexSessions.tree && viewItem == sessionArchived",
+          "group": "copy@1"
+        },
+        {
+          "command": "codexSessions.copyResumeCommand",
+          "when": "view == codexSessions.tree && viewItem == sessionArchived",
+          "group": "copy@2"
+        },
+        {
+          "command": "codexSessions.openSessionWorkspace",
+          "when": "view == codexSessions.tree && viewItem == sessionArchived",
+          "group": "open@1"
+        },
+        {
+          "command": "codexSessions.revealSessionFile",
+          "when": "view == codexSessions.tree && viewItem == sessionArchived",
+          "group": "open@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "%configuration.title%",
+      "properties": {
+        "codexSessionManager.dataSourceMode": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "appServerOnly",
+            "filesystemOnly"
+          ],
+          "default": "auto",
+          "description": "%configuration.dataSourceMode.description%"
+        },
+        "codexSessionManager.currentProjectOnlyDefault": {
+          "type": "boolean",
+          "default": false,
+          "description": "%configuration.currentProjectOnlyDefault.description%"
+        },
+        "codexSessionManager.showArchivedDefault": {
+          "type": "boolean",
+          "default": true,
+          "description": "%configuration.showArchivedDefault.description%"
+        },
+        "codexSessionManager.includeExecSessions": {
+          "type": "boolean",
+          "default": true,
+          "description": "%configuration.includeExecSessions.description%"
+        },
+        "codexSessionManager.includeSubagentSessions": {
+          "type": "boolean",
+          "default": false,
+          "description": "%configuration.includeSubagentSessions.description%"
+        },
+        "codexSessionManager.refreshIntervalSeconds": {
+          "type": "number",
+          "default": 20,
+          "minimum": 5,
+          "maximum": 600,
+          "description": "%configuration.refreshIntervalSeconds.description%"
+        },
+        "codexSessionManager.detailTurnFetchMode": {
+          "type": "string",
+          "enum": [
+            "summary",
+            "full"
+          ],
+          "default": "summary",
+          "description": "%configuration.detailTurnFetchMode.description%"
+        },
+        "codexSessionManager.codexHomeOverride": {
+          "type": "string",
+          "default": "",
+          "description": "%configuration.codexHomeOverride.description%"
+        },
+        "codexSessionManager.codexCliPath": {
+          "type": "string",
+          "default": "codex",
+          "description": "%configuration.codexCliPath.description%"
+        },
+        "codexSessionManager.focusCurrentWorkspaceOnViewOpen": {
+          "type": "boolean",
+          "default": false,
+          "description": "%configuration.focusCurrentWorkspaceOnViewOpen.description%"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "test": "npm run build && node --test out/test/**/*.test.js",
+    "package:vsix": "npm run build && node ./scripts/package-vsix.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.10",
+    "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.6.0",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,0 +1,15 @@
+export const EXTENSION_NAMESPACE = "codexSessionManager";
+export const METADATA_STORAGE_KEY = "sessionMetadataById.v1";
+export const DETAILS_URI_SCHEME = "codex-session";
+export const UNKNOWN_PROJECT_LABEL = "未归类";
+export const VIEW_ID = "codexSessions.tree";
+export const CLI_TERMINAL_NAME = "Codex Sessions";
+export const OFFICIAL_CODEX_EXTENSION_ID = "openai.chatgpt";
+export const OFFICIAL_CODEX_LOCAL_ROUTE_PREFIX = "/local/";
+export const GROUP_CURRENT = "group.current";
+export const GROUP_OTHER = "group.other";
+export const GROUP_UNCATEGORIZED = "group.uncategorized";
+export const GROUP_ARCHIVED = "group.archived";
+export const APP_SERVER_REQUEST_TIMEOUT_MS = 15000;
+export const MAX_LIST_PAGES = 20;
+export const MAX_TURNS_IN_DETAILS = 8;

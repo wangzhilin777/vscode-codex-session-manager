@@ -1,0 +1,7 @@
+node_modules/
+vscode-extension/node_modules/
+vscode-extension/out/
+dist/
+*.vsix
+npm-debug.log*
+*.log

@@ -1,0 +1,202 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { CodexFilesystemProvider } from "../data/filesystemProvider";
+
+function makeLogger() {
+  return {
+    appendLine() {}
+  };
+}
+
+test("filesystem provider loads indexed and archived sessions", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-manager-"));
+  const sessionsDir = path.join(root, "sessions", "2026", "06", "27");
+  const archivedDir = path.join(root, "archived_sessions");
+  fs.mkdirSync(sessionsDir, { recursive: true });
+  fs.mkdirSync(archivedDir, { recursive: true });
+
+  fs.writeFileSync(
+    path.join(root, "session_index.jsonl"),
+    [
+      JSON.stringify({
+        id: "session-a",
+        thread_name: "Thread A",
+        updated_at: "2026-06-27T12:00:00Z"
+      }),
+      JSON.stringify({
+        id: "session-b",
+        thread_name: "Thread B",
+        updated_at: "2026-06-27T11:00:00Z"
+      }),
+      JSON.stringify({
+        id: "index-only-session",
+        thread_name: "Index Only",
+        updated_at: "2026-06-27T10:00:00Z"
+      })
+    ].join("\n"),
+    "utf8"
+  );
+
+  fs.writeFileSync(
+    path.join(root, ".codex-global-state.json"),
+    JSON.stringify({
+      "thread-workspace-root-hints": {
+        "session-a": "E:\\Workspace\\VSCode\\test"
+      }
+    }),
+    "utf8"
+  );
+
+  fs.writeFileSync(
+    path.join(sessionsDir, "session-a.jsonl"),
+    `${JSON.stringify({
+      type: "session_meta",
+      payload: {
+        id: "session-a",
+        cwd: "E:\\Workspace\\VSCode\\test",
+        source: "vscode",
+        model_provider: "openai",
+        cli_version: "0.1.0",
+        git_info: {
+          branch: "main",
+          sha: "abc123"
+        }
+      }
+    })}\n`,
+    "utf8"
+  );
+
+  fs.writeFileSync(
+    path.join(archivedDir, "session-b.jsonl"),
+    `${JSON.stringify({
+      type: "session_meta",
+      payload: {
+        id: "session-b",
+        cwd: "E:\\Workspace\\VSCode\\other",
+        source: "cli"
+      }
+    })}\n`,
+    "utf8"
+  );
+
+  const provider = new CodexFilesystemProvider({
+    codexHome: root,
+    logger: makeLogger()
+  });
+
+  const hints = provider.getWorkspaceHints();
+  const sessions = provider.listSessions();
+
+  assert.equal(hints["session-a"], "E:\\Workspace\\VSCode\\test");
+  assert.equal(sessions.length, 2);
+  assert.equal(sessions[0]?.id, "session-a");
+  assert.equal(sessions[1]?.archived, true);
+});
+
+test("filesystem provider includes rollout files even when metadata is incomplete", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-manager-"));
+  const sessionsDir = path.join(root, "sessions", "2026", "06", "28");
+  fs.mkdirSync(sessionsDir, { recursive: true });
+
+  const sessionId = "019f098d-7192-7333-8d97-e3d56ba6b50b";
+  fs.writeFileSync(
+    path.join(sessionsDir, `rollout-2026-06-27T22-48-17-${sessionId}.jsonl`),
+    `${JSON.stringify({
+      timestamp: "2026-06-27T22:48:17.000Z",
+      type: "response_item",
+      payload: {
+        type: "message",
+        content: "metadata is not available in the first rows"
+      }
+    })}\n`,
+    "utf8"
+  );
+
+  const provider = new CodexFilesystemProvider({
+    codexHome: root,
+    logger: makeLogger()
+  });
+
+  const sessions = provider.listSessions();
+
+  assert.equal(sessions.length, 1);
+  assert.equal(sessions[0]?.id, sessionId);
+  assert.equal(sessions[0]?.sessionId, sessionId);
+  assert.equal(typeof sessions[0]?.updatedAt, "number");
+});
+
+test("filesystem provider sorts unindexed rollout files by file timestamp fallback", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-manager-"));
+  const sessionsDir = path.join(root, "sessions", "2026", "06", "28");
+  fs.mkdirSync(sessionsDir, { recursive: true });
+
+  const olderId = "019f098d-7192-7333-8d97-e3d56ba6b50b";
+  const newerId = "019f098d-7192-7333-8d97-e3d56ba6b50c";
+  const olderPath = path.join(sessionsDir, `rollout-2026-06-27T22-48-17-${olderId}.jsonl`);
+  const newerPath = path.join(sessionsDir, `rollout-2026-06-28T22-48-17-${newerId}.jsonl`);
+  fs.writeFileSync(olderPath, "{}\n", "utf8");
+  fs.writeFileSync(newerPath, "{}\n", "utf8");
+  fs.utimesSync(olderPath, new Date("2026-06-27T00:00:00Z"), new Date("2026-06-27T00:00:00Z"));
+  fs.utimesSync(newerPath, new Date("2026-06-28T00:00:00Z"), new Date("2026-06-28T00:00:00Z"));
+
+  const provider = new CodexFilesystemProvider({
+    codexHome: root,
+    logger: makeLogger()
+  });
+
+  const sessions = provider.listSessions();
+
+  assert.equal(sessions.length, 2);
+  assert.equal(sessions[0]?.id, newerId);
+  assert.equal(sessions[1]?.id, olderId);
+});
+
+test("filesystem provider keeps the newest index title for renamed sessions", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-manager-"));
+  const sessionsDir = path.join(root, "sessions", "2026", "06", "28");
+  fs.mkdirSync(sessionsDir, { recursive: true });
+
+  fs.writeFileSync(
+    path.join(root, "session_index.jsonl"),
+    [
+      JSON.stringify({
+        id: "renamed-session",
+        thread_name: "CPA配置",
+        updated_at: "2026-06-28T01:00:00Z"
+      }),
+      JSON.stringify({
+        id: "renamed-session",
+        thread_name: "CPA配置1",
+        updated_at: "2026-06-28T01:02:00Z"
+      })
+    ].join("\n"),
+    "utf8"
+  );
+
+  fs.writeFileSync(
+    path.join(sessionsDir, "renamed-session.jsonl"),
+    `${JSON.stringify({
+      type: "session_meta",
+      payload: {
+        id: "renamed-session",
+        cwd: "E:\\Workspace\\VSCode\\test",
+        source: "vscode"
+      }
+    })}\n`,
+    "utf8"
+  );
+
+  const provider = new CodexFilesystemProvider({
+    codexHome: root,
+    logger: makeLogger()
+  });
+
+  const sessions = provider.listSessions();
+
+  assert.equal(sessions.length, 1);
+  assert.equal(sessions[0]?.name, "CPA配置1");
+  assert.equal(sessions[0]?.preview, "CPA配置1");
+});
