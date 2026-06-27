@@ -2,7 +2,7 @@
   "name": "vscode-codex-session-manager",
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "publisher": "wangzhilin777",
   "license": "MIT",
   "icon": "resources/codex-sessions.png",

@@ -1,5 +1,10 @@
 # 更新日志
 
+## 0.1.16
+
+- 将扩展显示名改为 `Codex 会话管理 / Codex Session Manager`，方便中文和英文环境识别。
+- 将 Marketplace 与 VS Code 扩展描述改为中英文双语，明确这是按项目管理 Codex 会话并可跳转官方 Codex 继续对话的扩展。
+
 ## 0.1.15
 
 - 新增 Marketplace 扩展 PNG 图标，避免网页上传时缩略图或图标解析为空。
