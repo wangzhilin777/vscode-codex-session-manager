@@ -2,9 +2,10 @@
   "name": "vscode-codex-session-manager",
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "publisher": "wangzhilin777",
   "license": "MIT",
+  "icon": "resources/codex-sessions.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/wangzhilin777/vscode-codex-session-manager.git"

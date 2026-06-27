@@ -24,6 +24,8 @@ $env:VSCE_PAT = "<你的 Marketplace PAT>"
 .\scripts\publish-marketplace.ps1
 ```
 
+如果使用网页上传，请点击 `New extension` 后选择 `Visual Studio Code` 类型，再上传 `dist/` 下以 `wangzhilin777.vscode-codex-session-manager-` 开头的 `.vsix` 文件。不要选择 Azure DevOps 扩展类型。
+
 脚本会自动执行：
 
 - `npm test`

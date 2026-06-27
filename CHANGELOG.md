@@ -1,5 +1,10 @@
 # 更新日志
 
+## 0.1.15
+
+- 新增 Marketplace 扩展 PNG 图标，避免网页上传时缩略图或图标解析为空。
+- 重新生成用于 Marketplace 上传的 VSIX 包。
+
 ## 0.1.14
 
 - 将扩展发布者切换为 `wangzhilin777`，准备发布到 VS Code Marketplace。
