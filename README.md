@@ -37,3 +37,9 @@ npm install
 npm run test
 npm run package:vsix
 ```
+
+## 发布到 VS Code Marketplace
+
+当前 Publisher 配置为 `wangzhilin777`。首次发布前需要准备 Marketplace Publisher 和具有 `Manage` 权限的 `VSCE_PAT`。
+
+详见 [Marketplace 发布说明](docs/01_Marketplace发布说明.md)。
