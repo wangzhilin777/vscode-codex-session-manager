@@ -127,6 +127,7 @@ class SessionManagerController {
         }
         await this.runSafe(async () => {
           this.cliService.resumeInTerminal(session);
+          await vscode.window.showInformationMessage(t("resumeStarted"));
         });
       }),
       vscode.commands.registerCommand("codexSessions.forkInTerminal", async (node?: SessionNode) => {
@@ -136,6 +137,7 @@ class SessionManagerController {
         }
         await this.runSafe(async () => {
           this.cliService.forkInTerminal(session);
+          await vscode.window.showInformationMessage(t("forkStarted"));
         });
       }),
       vscode.commands.registerCommand("codexSessions.togglePinSession", async (node?: SessionNode) => {
@@ -143,16 +145,20 @@ class SessionManagerController {
         if (!session) {
           return;
         }
-        await this.metadataStore.update(session.sessionId, { pinned: !session.local.pinned });
+        const nextPinned = !session.local.pinned;
+        await this.metadataStore.update(this.metadataKeyFor(session), { pinned: nextPinned });
         await this.refresh();
+        await vscode.window.showInformationMessage(t(nextPinned ? "sessionPinned" : "sessionUnpinned", { title: session.displayName }));
       }),
       vscode.commands.registerCommand("codexSessions.toggleUnreadSession", async (node?: SessionNode) => {
         const session = this.pickSession(node);
         if (!session) {
           return;
         }
-        await this.metadataStore.update(session.sessionId, { unread: !session.local.unread });
+        const nextUnread = !session.local.unread;
+        await this.metadataStore.update(this.metadataKeyFor(session), { unread: nextUnread });
         await this.refresh();
+        await vscode.window.showInformationMessage(t(nextUnread ? "sessionMarkedUnread" : "sessionMarkedRead", { title: session.displayName }));
       }),
       vscode.commands.registerCommand("codexSessions.archiveSession", async (node?: SessionNode) => {
         const session = this.pickSession(node);
@@ -162,6 +168,7 @@ class SessionManagerController {
         await this.runSafe(async () => {
           await this.cliService.archive(session);
           await this.refresh();
+          await vscode.window.showInformationMessage(t("sessionArchivedMessage", { title: session.displayName }));
         });
       }),
       vscode.commands.registerCommand("codexSessions.unarchiveSession", async (node?: SessionNode) => {
@@ -179,6 +186,7 @@ class SessionManagerController {
         await this.runSafe(async () => {
           await this.unarchiveSessionWithFallback(session);
           await this.refresh();
+          await vscode.window.showInformationMessage(t("sessionUnarchivedMessage", { title: session.displayName }));
         });
       }),
       vscode.commands.registerCommand("codexSessions.deleteSession", async (node?: SessionNode) => {
@@ -204,7 +212,7 @@ class SessionManagerController {
             throw new Error(t("deleteSessionFailed", { sessionId: session.sessionId }));
           }
           this.output.appendLine(`[extension] deleted archived session ${session.sessionId}: ${deletedPath}`);
-          await this.metadataStore.delete(session.sessionId);
+          await this.metadataStore.delete(this.metadataKeyFor(session));
           await this.refresh();
           await vscode.window.showInformationMessage(t("deleteSessionSucceeded", { title: session.displayName }));
         });
@@ -239,14 +247,16 @@ class SessionManagerController {
       }),
       vscode.commands.registerCommand("codexSessions.openSessionWorkspace", async (node?: SessionNode) => {
         const session = this.pickSession(node);
-        if (!session?.cwd) {
+        const targetPath = session?.workspaceRoot || session?.cwd || "";
+        if (!targetPath) {
+          await vscode.window.showWarningMessage(t("workingDirectoryMissing"));
           return;
         }
         await this.runSafe(async () => {
-          if (!fs.existsSync(session.cwd)) {
-            throw new Error(t("workspacePathMissing", { path: session.cwd }));
+          if (!fs.existsSync(targetPath)) {
+            throw new Error(t("workspacePathMissing", { path: targetPath }));
           }
-          await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(session.cwd), {
+          await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(targetPath), {
             forceNewWindow: false
           });
         });
@@ -255,6 +265,7 @@ class SessionManagerController {
         const session = this.pickSession(node);
         const targetPath = session?.workspaceRoot || session?.cwd || "";
         if (!targetPath) {
+          await vscode.window.showWarningMessage(t("workingDirectoryMissing"));
           return;
         }
         await this.runSafe(async () => {
@@ -270,6 +281,7 @@ class SessionManagerController {
         const session = this.pickSession(node);
         const targetPath = session?.workspaceRoot || session?.cwd || "";
         if (!targetPath) {
+          await vscode.window.showWarningMessage(t("workingDirectoryMissing"));
           return;
         }
         await this.runSafe(async () => {
@@ -282,6 +294,7 @@ class SessionManagerController {
       vscode.commands.registerCommand("codexSessions.revealSessionFile", async (node?: SessionNode) => {
         const session = this.pickSession(node);
         if (!session?.path) {
+          await vscode.window.showWarningMessage(t("sessionFileMissing"));
           return;
         }
         await this.runSafe(async () => {
@@ -399,8 +412,18 @@ class SessionManagerController {
     if (value === undefined) {
       return;
     }
-    await this.metadataStore.update(session.sessionId, { [field]: value.trim() });
+    const nextValue = value.trim();
+    await this.metadataStore.update(this.metadataKeyFor(session), { [field]: nextValue });
     await this.refresh();
+    if (field === "alias") {
+      await vscode.window.showInformationMessage(t("sessionRenamedMessage", { title: nextValue || session.displayName }));
+      return;
+    }
+    await vscode.window.showInformationMessage(t("metadataSavedMessage", { title: session.displayName, label: placeHolder }));
+  }
+
+  private metadataKeyFor(session: SessionRecord): string {
+    return session.sessionId || session.id;
   }
 
   private async openPrimarySessionTarget(session: SessionRecord): Promise<void> {

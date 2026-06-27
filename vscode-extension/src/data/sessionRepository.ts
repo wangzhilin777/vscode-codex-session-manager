@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { CodexCliService } from "../actions/codexCliService";
 import { CodexAppServerClient } from "./appServerClient";
 import { CodexFilesystemProvider } from "./filesystemProvider";
+import { metadataForRawSession } from "./sessionMetadata";
 import { buildGroups, dedupeRawSessions, filterSessions, resolveWorkspaceHint, toSessionRecord } from "./sessionTransforms";
 import { MetadataStore } from "../storage/metadataStore";
 import { ExtensionSettings, Logger, RawSessionRecord, RepositorySnapshot, SessionFilterState, SessionGroup, SessionRecord, SessionSourceKind } from "../types";
@@ -108,7 +109,7 @@ export class SessionRepository {
       .map((raw) =>
         toSessionRecord(
           raw,
-          metadataById[raw.id] ?? { alias: "", projectTag: "", note: "", pinned: false, unread: false },
+          metadataForRawSession(raw, metadataById),
           currentRoots,
           resolveWorkspaceHint(raw.id, raw.cwd, hints)
         )

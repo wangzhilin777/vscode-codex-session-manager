@@ -17,7 +17,9 @@ type MessageKey =
   | "execSourceLabel"
   | "filesystemSourceLabel"
   | "fallbackActive"
+  | "forkStarted"
   | "inputSearchFilter"
+  | "metadataSavedMessage"
   | "missingOfficial"
   | "officialMissing"
   | "officialOpenFailed"
@@ -27,7 +29,16 @@ type MessageKey =
   | "otherGroupLabel"
   | "projectLabel"
   | "pinnedBadge"
+  | "sessionArchivedMessage"
+  | "sessionMarkedRead"
+  | "sessionMarkedUnread"
+  | "sessionPinned"
+  | "sessionRenamedMessage"
+  | "sessionUnpinned"
+  | "sessionUnarchivedMessage"
   | "searchLabel"
+  | "resumeStarted"
+  | "sessionFileMissing"
   | "showAllWorkspacesMessage"
   | "showCurrentWorkspaceMessage"
   | "sourceLabel"
@@ -42,6 +53,8 @@ type MessageKey =
   | "unarchiveSessionConfirmMessage"
   | "unreadBadge"
   | "updatedLabel"
+  | "valueCopied"
+  | "workingDirectoryMissing"
   | "workspacePathMissing";
 
 const en: Record<MessageKey, string> = {
@@ -63,7 +76,9 @@ const en: Record<MessageKey, string> = {
   execSourceLabel: "Exec",
   filesystemSourceLabel: "Filesystem",
   fallbackActive: "fallback active",
+  forkStarted: "Started Codex fork in the terminal.",
   inputSearchFilter: "Set a session search filter",
+  metadataSavedMessage: "Saved {label} for \"{title}\".",
   missingOfficial: "Official Codex VS Code extension was not detected. Opened the local details page instead.",
   officialMissing: "official missing",
   officialOpenFailed: "Failed to open the official Codex conversation. Opened the local details page instead.",
@@ -73,7 +88,16 @@ const en: Record<MessageKey, string> = {
   otherGroupLabel: "Other Workspaces",
   projectLabel: "Project",
   pinnedBadge: "Pinned",
+  sessionArchivedMessage: "Archived session \"{title}\".",
+  sessionMarkedRead: "Marked \"{title}\" as read.",
+  sessionMarkedUnread: "Marked \"{title}\" as unread.",
+  sessionPinned: "Pinned \"{title}\".",
+  sessionRenamedMessage: "Renamed session to \"{title}\".",
+  sessionUnpinned: "Unpinned \"{title}\".",
+  sessionUnarchivedMessage: "Unarchived session \"{title}\".",
   searchLabel: "search",
+  resumeStarted: "Started Codex resume in the terminal.",
+  sessionFileMissing: "This session has no local session file path.",
   showAllWorkspacesMessage: "Showing all workspaces.",
   showCurrentWorkspaceMessage: "Showing the current workspace.",
   sourceLabel: "Source",
@@ -88,6 +112,8 @@ const en: Record<MessageKey, string> = {
   unarchiveSessionConfirmMessage: "Unarchive session \"{title}\"?",
   unreadBadge: "Unread",
   updatedLabel: "Updated",
+  valueCopied: "Copied {label}.",
+  workingDirectoryMissing: "This session has no usable working directory.",
   workspacePathMissing: "workspace path not found: {path}"
 };
 
@@ -110,7 +136,9 @@ const zh: Record<MessageKey, string> = {
   execSourceLabel: "执行会话",
   filesystemSourceLabel: "本地文件",
   fallbackActive: "已启用兜底",
+  forkStarted: "已在终端启动 Codex 派生。",
   inputSearchFilter: "设置会话搜索过滤",
+  metadataSavedMessage: "已保存“{title}”的{label}。",
   missingOfficial: "未检测到官方 Codex VS Code 插件，已回退到本地详情页。",
   officialMissing: "官方缺失",
   officialOpenFailed: "打开官方 Codex 会话失败，已回退到本地详情页。",
@@ -120,7 +148,16 @@ const zh: Record<MessageKey, string> = {
   otherGroupLabel: "其他工作区",
   projectLabel: "项目",
   pinnedBadge: "已置顶",
+  sessionArchivedMessage: "已归档会话“{title}”。",
+  sessionMarkedRead: "已将“{title}”标记为已读。",
+  sessionMarkedUnread: "已将“{title}”标记为未读。",
+  sessionPinned: "已置顶“{title}”。",
+  sessionRenamedMessage: "已重命名为“{title}”。",
+  sessionUnpinned: "已取消置顶“{title}”。",
+  sessionUnarchivedMessage: "已取消归档会话“{title}”。",
   searchLabel: "搜索",
+  resumeStarted: "已在终端启动 Codex 继续会话。",
+  sessionFileMissing: "这个会话没有本地会话文件路径。",
   showAllWorkspacesMessage: "已显示全部工作区。",
   showCurrentWorkspaceMessage: "已显示本工作区。",
   sourceLabel: "来源",
@@ -135,6 +172,8 @@ const zh: Record<MessageKey, string> = {
   unarchiveSessionConfirmMessage: "确定取消归档会话“{title}”吗？",
   unreadBadge: "未读",
   updatedLabel: "更新",
+  valueCopied: "已复制{label}。",
+  workingDirectoryMissing: "这个会话没有可用的工作目录。",
   workspacePathMissing: "工作区路径不存在：{path}"
 };
 
