@@ -170,6 +170,7 @@ export function filterSessions(sessions: readonly SessionRecord[], state: Sessio
 
     const haystack = [
       session.displayName,
+      session.name,
       session.preview,
       session.local.alias,
       session.local.projectTag,
@@ -178,7 +179,11 @@ export function filterSessions(sessions: readonly SessionRecord[], state: Sessio
       session.local.unread ? "unread" : "",
       session.sessionId,
       session.cwd,
+      session.workspaceRoot,
       session.projectKey,
+      session.projectLabel,
+      session.projectDescription,
+      session.gitBranch,
       session.sourceLabel
     ]
       .join("\n")

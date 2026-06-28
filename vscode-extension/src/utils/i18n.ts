@@ -21,6 +21,8 @@ type MessageKey =
   | "inputSearchFilter"
   | "metadataSavedMessage"
   | "missingOfficial"
+  | "noSessionsAvailable"
+  | "noteLabel"
   | "officialMissing"
   | "officialOpenFailed"
   | "officialReady"
@@ -37,6 +39,8 @@ type MessageKey =
   | "sessionUnpinned"
   | "sessionUnarchivedMessage"
   | "searchLabel"
+  | "searchSessionsPlaceholder"
+  | "searchSessionsTitle"
   | "resumeStarted"
   | "sessionFileMissing"
   | "showAllWorkspacesMessage"
@@ -80,6 +84,8 @@ const en: Record<MessageKey, string> = {
   inputSearchFilter: "Set a session search filter",
   metadataSavedMessage: "Saved {label} for \"{title}\".",
   missingOfficial: "Official Codex VS Code extension was not detected. Opened the local details page instead.",
+  noSessionsAvailable: "No Codex sessions were found.",
+  noteLabel: "Note",
   officialMissing: "official missing",
   officialOpenFailed: "Failed to open the official Codex conversation. Opened the local details page instead.",
   officialReady: "official ready",
@@ -96,6 +102,8 @@ const en: Record<MessageKey, string> = {
   sessionUnpinned: "Unpinned \"{title}\".",
   sessionUnarchivedMessage: "Unarchived session \"{title}\".",
   searchLabel: "search",
+  searchSessionsPlaceholder: "Search by title, preview, note, path, project, or session ID",
+  searchSessionsTitle: "Search Codex Sessions",
   resumeStarted: "Started Codex resume in the terminal.",
   sessionFileMissing: "This session has no local session file path.",
   showAllWorkspacesMessage: "Showing all workspaces.",
@@ -140,6 +148,8 @@ const zh: Record<MessageKey, string> = {
   inputSearchFilter: "设置会话搜索过滤",
   metadataSavedMessage: "已保存“{title}”的{label}。",
   missingOfficial: "未检测到官方 Codex VS Code 插件，已回退到本地详情页。",
+  noSessionsAvailable: "没有找到 Codex 会话。",
+  noteLabel: "备注",
   officialMissing: "官方缺失",
   officialOpenFailed: "打开官方 Codex 会话失败，已回退到本地详情页。",
   officialReady: "官方就绪",
@@ -156,6 +166,8 @@ const zh: Record<MessageKey, string> = {
   sessionUnpinned: "已取消置顶“{title}”。",
   sessionUnarchivedMessage: "已取消归档会话“{title}”。",
   searchLabel: "搜索",
+  searchSessionsPlaceholder: "可按标题、预览、备注、路径、项目或会话 ID 搜索",
+  searchSessionsTitle: "搜索 Codex 会话",
   resumeStarted: "已在终端启动 Codex 继续会话。",
   sessionFileMissing: "这个会话没有本地会话文件路径。",
   showAllWorkspacesMessage: "已显示全部工作区。",

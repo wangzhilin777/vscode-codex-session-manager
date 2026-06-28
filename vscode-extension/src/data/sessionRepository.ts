@@ -58,7 +58,9 @@ export class SessionRepository {
 
     if (settings.dataSourceMode !== "filesystemOnly") {
       try {
-        raws = (await this.appServerClient.listThreads(listSourceKinds(settings), state.searchTerm)).map((thread) => ({
+        // Keep search local so extension-only metadata such as alias, note, project tag,
+        // and normalized workspace paths participate in filtering consistently.
+        raws = (await this.appServerClient.listThreads(listSourceKinds(settings), "")).map((thread) => ({
           id: thread.id,
           sessionId: thread.sessionId,
           preview: thread.preview,

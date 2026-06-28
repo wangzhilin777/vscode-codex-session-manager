@@ -11,6 +11,7 @@
 - 聚合同项目下的 VS Code、Desktop/App、CLI、Exec 会话。 / Merge VS Code, Desktop/App, CLI, and Exec sessions that belong to the same project.
 - 自动折叠短时间重复同步的同名会话。 / Collapse short-lived duplicate synced sessions with the same title.
 - 使用最新索引标题，兼容官方 Codex 重命名。 / Prefer the latest indexed title so official Codex renames stay in sync.
+- 搜索并直接打开会话，支持标题、预览、备注、路径、项目和会话 ID。 / Search and open sessions by title, preview, note, path, project, and session ID.
 - 支持本地重命名、置顶、未读、项目标签、备注。 / Support local aliases, pinned state, unread state, project tags, and notes.
 - 一键跳转官方 Codex 继续对话。 / Continue a session in the official Codex extension with one click.
 - 打开归档会话前自动取消归档。 / Automatically unarchive a session before opening it.

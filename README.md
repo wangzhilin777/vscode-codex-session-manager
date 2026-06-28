@@ -19,6 +19,7 @@ Marketplace Publisher: `wangzhilin777`
 - 打开归档会话前自动取消归档，避免官方 Codex 报 `session is archived`。 / Automatically unarchive before opening, avoiding the official Codex `session is archived` error.
 - 同标题、同工作区的短时间重复会话自动折叠。 / Collapse short-lived duplicate sessions with the same title and workspace.
 - 官方重命名后的会话标题按最新索引显示。 / Keep titles in sync with official Codex renames by using the newest index.
+- 搜索并直接打开会话，支持标题、预览、备注、路径、项目和会话 ID。 / Search and open sessions by title, preview, note, path, project, and session ID.
 - 支持中英文界面，跟随 VS Code 当前语言。 / Support Chinese and English UI, following the current VS Code language.
 - 支持本地重命名、置顶、未读、项目标签、备注、复制会话 ID 和恢复命令。 / Support local aliases, pinned state, unread state, project tags, notes, copy session ID, and copy resume command.
 

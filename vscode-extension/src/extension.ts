@@ -20,11 +20,23 @@ import { SessionDetailsProvider } from "./view/sessionDetailsProvider";
 
 const PENDING_OPEN_AFTER_WORKSPACE_SWITCH_KEY = "pendingOpenAfterWorkspaceSwitch";
 const PENDING_OPEN_MAX_AGE_MS = 2 * 60 * 1000;
+const OFFICIAL_OPEN_RETRY_COUNT = 6;
+const OFFICIAL_OPEN_RETRY_DELAY_MS = 750;
 
 interface PendingOpenAfterWorkspaceSwitch {
   sessionId: string;
   workspacePath: string;
   createdAt: number;
+}
+
+interface SearchSessionQuickPickItem extends vscode.QuickPickItem {
+  session: SessionRecord;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 class SessionManagerController {
@@ -96,6 +108,9 @@ class SessionManagerController {
       vscode.commands.registerCommand("codexSessions.clearSearchFilter", async () => {
         this.state.searchTerm = "";
         await this.refresh();
+      }),
+      vscode.commands.registerCommand("codexSessions.searchAndOpenSession", async () => {
+        await this.searchAndOpenSession();
       }),
       vscode.commands.registerCommand("codexSessions.openInOfficialCodex", async (node?: SessionNode) => {
         const session = this.pickSession(node);
@@ -256,9 +271,7 @@ class SessionManagerController {
           if (!fs.existsSync(targetPath)) {
             throw new Error(t("workspacePathMissing", { path: targetPath }));
           }
-          await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(targetPath), {
-            forceNewWindow: false
-          });
+          await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(targetPath), false);
         });
       }),
       vscode.commands.registerCommand("codexSessions.openSessionWorkspaceNewWindow", async (node?: SessionNode) => {
@@ -272,9 +285,7 @@ class SessionManagerController {
           if (!fs.existsSync(targetPath)) {
             throw new Error(t("workspacePathMissing", { path: targetPath }));
           }
-          await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(targetPath), {
-            forceNewWindow: true
-          });
+          await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(targetPath), true);
         });
       }),
       vscode.commands.registerCommand("codexSessions.revealSessionWorkspace", async (node?: SessionNode) => {
@@ -315,6 +326,7 @@ class SessionManagerController {
       }),
       vscode.workspace.onDidChangeWorkspaceFolders(async () => {
         await this.refresh();
+        await this.openPendingSessionAfterWorkspaceSwitch();
       }),
       this.treeView.onDidChangeVisibility(async (event) => {
         if (!event.visible || !this.settings.focusCurrentWorkspaceOnViewOpen || this.state.currentProjectOnly) {
@@ -426,6 +438,62 @@ class SessionManagerController {
     return session.sessionId || session.id;
   }
 
+  private async searchAndOpenSession(): Promise<void> {
+    await this.runSafe(async () => {
+      const snapshot = await this.repository.load(
+        {
+          currentProjectOnly: false,
+          showArchived: true,
+          searchTerm: ""
+        },
+        this.settings
+      );
+      const sessions = snapshot.sessions;
+      if (sessions.length === 0) {
+        await vscode.window.showInformationMessage(t("noSessionsAvailable"));
+        return;
+      }
+
+      const items = sessions.map((session) => this.toSearchQuickPickItem(session));
+      const selected = await vscode.window.showQuickPick(items, {
+        title: t("searchSessionsTitle"),
+        placeHolder: t("searchSessionsPlaceholder"),
+        matchOnDescription: true,
+        matchOnDetail: true
+      });
+      if (!selected) {
+        return;
+      }
+
+      await this.openPrimarySessionTarget(selected.session);
+    });
+  }
+
+  private toSearchQuickPickItem(session: SessionRecord): SearchSessionQuickPickItem {
+    const stateLabels = [
+      session.archived ? t("archivedBadge") : "",
+      session.local.pinned ? t("pinnedBadge") : "",
+      session.local.unread ? t("unreadBadge") : ""
+    ].filter(Boolean);
+    const state = stateLabels.length > 0 ? ` · ${stateLabels.join(" · ")}` : "";
+    const note = session.local.note ? `\n${t("noteLabel")}: ${session.local.note}` : "";
+    return {
+      label: session.displayName,
+      description: `${session.sourceLabel} · ${session.projectLabel}${state}`,
+      detail: [
+        session.preview,
+        session.cwd,
+        session.sessionId,
+        session.local.alias,
+        session.local.projectTag,
+        note
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      session
+    };
+  }
+
   private async openPrimarySessionTarget(session: SessionRecord): Promise<void> {
     if (session.archived) {
       await this.runSafe(async () => {
@@ -446,17 +514,38 @@ class SessionManagerController {
       return;
     }
 
+    await this.openOfficialConversationOrFallback(session);
+  }
+
+  private async openOfficialConversationOrFallback(session: SessionRecord): Promise<void> {
     try {
-      const opened = await openOfficialCodexConversation(session.sessionId);
-      if (!opened) {
-        throw new Error(`VS Code rejected ${buildOfficialCodexConversationUri(session.sessionId).toString()}`);
-      }
+      await this.openOfficialConversationWithRetry(session.sessionId);
     } catch (error) {
       const message = String(error);
       this.output.appendLine(`[extension] official open failed, fallback to details: ${message}`);
       await this.detailsProvider.open(session);
       await vscode.window.showWarningMessage(t("officialOpenFailed"));
     }
+  }
+
+  private async openOfficialConversationWithRetry(sessionId: string): Promise<void> {
+    let lastError: unknown = null;
+    for (let attempt = 1; attempt <= OFFICIAL_OPEN_RETRY_COUNT; attempt += 1) {
+      try {
+        const opened = await openOfficialCodexConversation(sessionId);
+        if (!opened) {
+          throw new Error(`VS Code rejected ${buildOfficialCodexConversationUri(sessionId).toString()}`);
+        }
+        return;
+      } catch (error) {
+        lastError = error;
+        this.output.appendLine(`[extension] official open attempt ${attempt}/${OFFICIAL_OPEN_RETRY_COUNT} failed: ${String(error)}`);
+        if (attempt < OFFICIAL_OPEN_RETRY_COUNT) {
+          await sleep(OFFICIAL_OPEN_RETRY_DELAY_MS);
+        }
+      }
+    }
+    throw lastError ?? new Error(t("officialOpenFailed"));
   }
 
   private async unarchiveSessionWithFallback(session: SessionRecord): Promise<void> {
@@ -510,10 +599,8 @@ class SessionManagerController {
       createdAt: Date.now()
     } satisfies PendingOpenAfterWorkspaceSwitch);
 
-    await vscode.window.showInformationMessage(t("switchingWorkspaceForSession", { path: workspacePath }));
-    await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(workspacePath), {
-      forceNewWindow: false
-    });
+    void vscode.window.showInformationMessage(t("switchingWorkspaceForSession", { path: workspacePath }));
+    await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(workspacePath), false);
     return true;
   }
 
@@ -532,20 +619,19 @@ class SessionManagerController {
       return;
     }
 
-    await this.context.globalState.update(PENDING_OPEN_AFTER_WORKSPACE_SWITCH_KEY, undefined);
     if (!hasOfficialCodexExtension()) {
+      await this.context.globalState.update(PENDING_OPEN_AFTER_WORKSPACE_SWITCH_KEY, undefined);
       await vscode.window.showWarningMessage(t("missingOfficial"));
       return;
     }
 
     try {
-      const opened = await openOfficialCodexConversation(pending.sessionId);
-      if (!opened) {
-        throw new Error(`VS Code rejected ${buildOfficialCodexConversationUri(pending.sessionId).toString()}`);
-      }
+      await this.openOfficialConversationWithRetry(pending.sessionId);
+      await this.context.globalState.update(PENDING_OPEN_AFTER_WORKSPACE_SWITCH_KEY, undefined);
     } catch (error) {
       const message = String(error);
       this.output.appendLine(`[extension] pending official open failed: ${message}`);
+      await this.context.globalState.update(PENDING_OPEN_AFTER_WORKSPACE_SWITCH_KEY, undefined);
       await vscode.window.showWarningMessage(t("officialOpenFailed"));
     }
   }

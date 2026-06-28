@@ -150,6 +150,28 @@ test("filterSessions hides archived sessions by default when there is no search 
   assert.deepEqual(filtered, []);
 });
 
+test("filterSessions matches local metadata, project label, workspace path, and git branch", () => {
+  configureLanguage("en");
+  const raw = makeRaw("searchable", "E:\\Workspace\\VSCode\\search-target");
+  raw.gitBranch = "feature/session-search";
+  const record = toSessionRecord(
+    raw,
+    { alias: "Local Alias", projectTag: "Customer Portal", note: "Needs follow up" },
+    [],
+    ""
+  );
+
+  for (const searchTerm of ["follow up", "customer portal", "search-target", "feature/session-search", "local alias"]) {
+    const filtered = filterSessions([record], {
+      currentProjectOnly: false,
+      showArchived: true,
+      searchTerm
+    });
+
+    assert.deepEqual(filtered.map((item) => item.id), ["searchable"]);
+  }
+});
+
 test("dedupeRawSessions collapses short-lived duplicate VS Code sync rows", () => {
   const older = makeRaw("older", "E:\\Workspace\\VSCode\\test");
   older.name = "查询北京天气";

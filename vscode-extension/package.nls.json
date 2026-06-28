@@ -10,6 +10,7 @@
   "command.toggleArchived.title": "Codex Sessions: Toggle Archived",
   "command.setSearchFilter.title": "Codex Sessions: Set Search Filter",
   "command.clearSearchFilter.title": "Codex Sessions: Clear Search Filter",
+  "command.searchAndOpenSession.title": "Codex Sessions: Search And Open Session",
   "command.openDetails.title": "Codex Sessions: Open Local Details Page",
   "command.openInOfficialCodex.title": "Codex Sessions: Continue In Official Codex",
   "command.setAlias.title": "Codex Sessions: Rename Session",
