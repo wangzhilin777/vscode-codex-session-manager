@@ -46,6 +46,11 @@ export class SessionRepository {
     });
   }
 
+  public updateSettings(settings: ExtensionSettings): void {
+    this.appServerClient.updateSettings(settings);
+    this.filesystemProvider.updateCodexHome(settings.codexHomeOverride);
+  }
+
   public async load(state: SessionFilterState, settings: ExtensionSettings): Promise<RepositorySnapshot> {
     const snapshot = await this.loadFull(settings);
     return this.filterSnapshot(snapshot, state);
@@ -54,7 +59,8 @@ export class SessionRepository {
   public async loadFull(settings: ExtensionSettings): Promise<RepositorySnapshot> {
     const currentRoots = workspaceRoots();
     const hints = this.filesystemProvider.getWorkspaceHints();
-    const knownWorkspaceRoots = collectKnownWorkspaceRoots(currentRoots, hints);
+    const desktopWorkspaceRoots = this.filesystemProvider.getDesktopWorkspaceRoots();
+    const knownWorkspaceRoots = collectKnownWorkspaceRoots([...currentRoots, ...desktopWorkspaceRoots], hints);
     const desktopPinnedThreadIds = this.filesystemProvider.getPinnedThreadIds();
     const metadataById = this.metadataStore.getAll();
     const cliAvailable = await this.cliService.checkAvailability();
@@ -172,7 +178,8 @@ export class SessionRepository {
   public rehydrateSnapshot(snapshot: RepositorySnapshot): RepositorySnapshot {
     const currentRoots = workspaceRoots();
     const metadataById = this.metadataStore.getAll();
-    const knownWorkspaceRoots = collectKnownWorkspaceRoots(currentRoots, {}, snapshot.sessions);
+    const desktopWorkspaceRoots = this.filesystemProvider.getDesktopWorkspaceRoots();
+    const knownWorkspaceRoots = collectKnownWorkspaceRoots([...currentRoots, ...desktopWorkspaceRoots], {}, snapshot.sessions);
     const desktopPinnedThreadIds = this.filesystemProvider.getPinnedThreadIds();
     const sessions = snapshot.sessions
       .map((session) => {

@@ -138,6 +138,25 @@ test("filesystem provider accepts a single desktop pinned thread id", () => {
   assert.deepEqual([...pinned], ["session-a"]);
 });
 
+test("filesystem provider reads desktop workspace roots from global state", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-manager-"));
+  fs.writeFileSync(
+    path.join(root, ".codex-global-state.json"),
+    JSON.stringify({
+      "active-workspace-roots": "E:\\Workspace\\VSCode\\test",
+      "electron-saved-workspace-roots": ["e:\\Workspace\\VSCode\\cachelocal"]
+    }),
+    "utf8"
+  );
+
+  const provider = new CodexFilesystemProvider({
+    codexHome: root,
+    logger: makeLogger()
+  });
+
+  assert.deepEqual(provider.getDesktopWorkspaceRoots(), ["E:\\Workspace\\VSCode\\test", "e:\\Workspace\\VSCode\\cachelocal"]);
+});
+
 test("filesystem provider includes rollout files even when metadata is incomplete", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-manager-"));
   const sessionsDir = path.join(root, "sessions", "2026", "06", "28");

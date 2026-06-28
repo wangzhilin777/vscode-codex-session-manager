@@ -170,11 +170,21 @@ export class CodexAppServerClient {
   private readonly pending = new Map<number, PendingRequest>();
   private initialized = false;
   private readonly logger: Logger;
-  private readonly settings: ExtensionSettings;
+  private settings: ExtensionSettings;
 
   public constructor(settings: ExtensionSettings, logger: Logger) {
     this.settings = settings;
     this.logger = logger;
+  }
+
+  public updateSettings(settings: ExtensionSettings): void {
+    const requiresRestart =
+      this.settings.codexCliPath !== settings.codexCliPath ||
+      this.settings.codexHomeOverride !== settings.codexHomeOverride;
+    this.settings = settings;
+    if (requiresRestart) {
+      this.dispose();
+    }
   }
 
   public async listThreads(sourceKinds: SessionSourceKind[], searchTerm: string): Promise<AppServerThreadSummary[]> {
@@ -205,6 +215,7 @@ export class CodexAppServerClient {
       this.process.kill();
       this.process = null;
     }
+    this.buffer = "";
     this.initialized = false;
   }
 

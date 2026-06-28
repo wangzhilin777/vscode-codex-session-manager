@@ -11,7 +11,11 @@ function quoteArgument(value: string): string {
 }
 
 export class CodexCliService {
-  public constructor(private readonly settings: ExtensionSettings, private readonly logger: Logger) {}
+  public constructor(private settings: ExtensionSettings, private readonly logger: Logger) {}
+
+  public updateSettings(settings: ExtensionSettings): void {
+    this.settings = settings;
+  }
 
   public async checkAvailability(): Promise<boolean> {
     try {

@@ -166,11 +166,20 @@ class SessionManagerController {
         if (!session) {
           return;
         }
+        if (session.desktopPinned && !session.local.pinned) {
+          await vscode.window.showInformationMessage(t("desktopPinnedManagedByDesktop", { title: session.displayName }));
+          return;
+        }
         const nextPinned = !session.local.pinned;
         await this.metadataStore.update(this.metadataKeyFor(session), { pinned: nextPinned });
         await this.renderCurrentSnapshotOrRefresh();
         await this.writeCurrentSnapshotCache();
-        await vscode.window.showInformationMessage(t(nextPinned ? "sessionPinned" : "sessionUnpinned", { title: session.displayName }));
+        const messageKey = nextPinned
+          ? "sessionPinned"
+          : session.desktopPinned
+            ? "sessionLocalUnpinnedDesktopStillPinned"
+            : "sessionUnpinned";
+        await vscode.window.showInformationMessage(t(messageKey, { title: session.displayName }));
       }),
       vscode.commands.registerCommand("codexSessions.toggleUnreadSession", async (node?: SessionNode) => {
         const session = this.pickSession(node);
@@ -328,6 +337,8 @@ class SessionManagerController {
           return;
         }
         this.settings = getCurrentSettings();
+        this.cliService.updateSettings(this.settings);
+        this.repository.updateSettings(this.settings);
         this.state.currentProjectOnly = this.state.currentProjectOnly && this.settings.currentProjectOnlyDefault ? true : this.state.currentProjectOnly;
         this.scheduleRefreshLoop();
         await this.renderCurrentSnapshotOrRefresh();

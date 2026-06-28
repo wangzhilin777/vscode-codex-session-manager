@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.1.25
+
+- 修复 VS Code 配置变更后数据源仍沿用旧 `codexHomeOverride` / `codexCliPath` 的问题，切换 CODEX_HOME 或 CLI 路径后无需重载窗口即可刷新生效。
+- 会话归组会额外参考桌面端保存的 `active-workspace-roots` 与 `electron-saved-workspace-roots`，减少真实工作区会话掉入“无工作区”的情况。
+- 优化桌面端置顶会话在插件右键“置顶/取消置顶”时的反馈：桌面端置顶需在桌面端取消，插件本地置顶与桌面端置顶会分开提示。
+
 ## 0.1.24
 
 - 同步 Codex 桌面端 `.codex-global-state.json` 中的 `pinned-thread-ids`，桌面端置顶会话会在插件里显示置顶标识并参与置顶排序。

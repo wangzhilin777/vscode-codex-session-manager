@@ -11,6 +11,7 @@ type MessageKey =
   | "currentGroupDescription"
   | "currentGroupLabel"
   | "desktopAppSourceLabel"
+  | "desktopPinnedManagedByDesktop"
   | "deleteOnlyArchived"
   | "deleteSessionConfirmButton"
   | "deleteSessionConfirmDetail"
@@ -41,6 +42,7 @@ type MessageKey =
   | "sessionMarkedRead"
   | "sessionMarkedUnread"
   | "sessionPinned"
+  | "sessionLocalUnpinnedDesktopStillPinned"
   | "sessionRenamedMessage"
   | "sessionUnpinned"
   | "sessionUnarchivedMessage"
@@ -80,6 +82,7 @@ const en: Record<MessageKey, string> = {
   currentGroupDescription: "Sessions matched to the current workspace",
   currentGroupLabel: "Current Workspace",
   desktopAppSourceLabel: "Desktop App",
+  desktopPinnedManagedByDesktop: "\"{title}\" is pinned by Codex desktop. Unpin it in the desktop app, then refresh this view.",
   deleteOnlyArchived: "Only archived sessions can be deleted from this view.",
   deleteSessionConfirmButton: "Delete Session",
   deleteSessionConfirmDetail: "This removes the local Codex session file from CODEX_HOME. This operation cannot be undone.",
@@ -110,6 +113,7 @@ const en: Record<MessageKey, string> = {
   sessionMarkedRead: "Marked \"{title}\" as read.",
   sessionMarkedUnread: "Marked \"{title}\" as unread.",
   sessionPinned: "Pinned \"{title}\".",
+  sessionLocalUnpinnedDesktopStillPinned: "Removed the local pin for \"{title}\". It is still pinned by Codex desktop.",
   sessionRenamedMessage: "Renamed session to \"{title}\".",
   sessionUnpinned: "Unpinned \"{title}\".",
   sessionUnarchivedMessage: "Unarchived session \"{title}\".",
@@ -150,6 +154,7 @@ const zh: Record<MessageKey, string> = {
   currentGroupDescription: "当前工作区命中的会话",
   currentGroupLabel: "本工作区",
   desktopAppSourceLabel: "桌面端",
+  desktopPinnedManagedByDesktop: "“{title}”由 Codex 桌面端置顶，请在桌面端取消置顶后刷新插件视图。",
   deleteOnlyArchived: "当前视图只允许删除已归档会话。",
   deleteSessionConfirmButton: "删除会话",
   deleteSessionConfirmDetail: "这会删除 CODEX_HOME 下的本地 Codex 会话文件，操作不可撤销。",
@@ -180,6 +185,7 @@ const zh: Record<MessageKey, string> = {
   sessionMarkedRead: "已将“{title}”标记为已读。",
   sessionMarkedUnread: "已将“{title}”标记为未读。",
   sessionPinned: "已置顶“{title}”。",
+  sessionLocalUnpinnedDesktopStillPinned: "已取消“{title}”的插件本地置顶；该会话仍由 Codex 桌面端置顶。",
   sessionRenamedMessage: "已重命名为“{title}”。",
   sessionUnpinned: "已取消置顶“{title}”。",
   sessionUnarchivedMessage: "已取消归档会话“{title}”。",

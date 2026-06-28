@@ -33,6 +33,11 @@ function readJsonFile<T>(filePath: string, fallback: T): T {
   }
 }
 
+function arrayOfStrings(value: unknown): string[] {
+  const values = Array.isArray(value) ? value : [value];
+  return values.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+}
+
 function readJsonLines(filePath: string): Array<Record<string, unknown>> {
   if (!fs.existsSync(filePath)) {
     return [];
@@ -292,12 +297,25 @@ function parseSessionMetaFromRows(rows: Array<Record<string, unknown>>): Session
 }
 
 export class CodexFilesystemProvider {
-  private readonly codexHome: string;
+  private codexHome: string;
   private readonly logger: Logger;
 
   public constructor(options: FilesystemProviderOptions) {
     this.codexHome = options.codexHome || path.join(os.homedir(), ".codex");
     this.logger = options.logger;
+  }
+
+  public updateCodexHome(codexHome: string): void {
+    this.codexHome = codexHome || path.join(os.homedir(), ".codex");
+  }
+
+  public getDesktopWorkspaceRoots(): string[] {
+    const globalState = readJsonFile<Record<string, unknown>>(path.join(this.codexHome, ".codex-global-state.json"), {});
+    const roots = [
+      ...arrayOfStrings(globalState["active-workspace-roots"]),
+      ...arrayOfStrings(globalState["electron-saved-workspace-roots"])
+    ];
+    return roots.map(toDisplayPath).filter((value) => value.trim().length > 0);
   }
 
   public getWorkspaceHints(): Record<string, string> {
@@ -319,8 +337,7 @@ export class CodexFilesystemProvider {
   public getPinnedThreadIds(): Set<string> {
     const globalState = readJsonFile<Record<string, unknown>>(path.join(this.codexHome, ".codex-global-state.json"), {});
     const pinned = globalState["pinned-thread-ids"];
-    const values = Array.isArray(pinned) ? pinned : [pinned];
-    return new Set(values.filter((value): value is string => typeof value === "string" && value.trim().length > 0));
+    return new Set(arrayOfStrings(pinned));
   }
 
   public listSessions(): RawSessionRecord[] {
