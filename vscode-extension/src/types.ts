@@ -25,6 +25,7 @@ export interface ExtensionSettings {
   codexHomeOverride: string;
   codexCliPath: string;
   focusCurrentWorkspaceOnViewOpen: boolean;
+  enableDiskCache: boolean;
 }
 
 export interface LocalSessionMetadata {

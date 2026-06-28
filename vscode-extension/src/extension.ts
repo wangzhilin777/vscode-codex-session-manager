@@ -6,8 +6,9 @@ import { CodexCliService } from "./actions/codexCliService";
 import { EXTENSION_NAMESPACE, VIEW_ID } from "./constants";
 import { getCurrentSettings, SessionRepository } from "./data/sessionRepository";
 import { MetadataStore } from "./storage/metadataStore";
+import { SessionSnapshotCache } from "./storage/sessionSnapshotCache";
 import { SessionNode, SessionTreeProvider } from "./tree/sessionTreeProvider";
-import { ExtensionSettings, SessionFilterState, SessionRecord } from "./types";
+import { ExtensionSettings, RepositorySnapshot, SessionFilterState, SessionRecord } from "./types";
 import {
   buildOfficialCodexConversationUri,
   hasOfficialCodexExtension,
@@ -42,6 +43,7 @@ function sleep(ms: number): Promise<void> {
 class SessionManagerController {
   private readonly output = vscode.window.createOutputChannel("Codex Session Manager");
   private readonly metadataStore: MetadataStore;
+  private readonly snapshotCache: SessionSnapshotCache;
   private settings: ExtensionSettings;
   private state: SessionFilterState;
   private readonly cliService: CodexCliService;
@@ -50,9 +52,12 @@ class SessionManagerController {
   private readonly detailsProvider: SessionDetailsProvider;
   private readonly treeView: vscode.TreeView<SessionNode | unknown>;
   private refreshTimer: NodeJS.Timeout | null = null;
+  private fullSnapshot: RepositorySnapshot | null = null;
+  private refreshPromise: Promise<void> | null = null;
 
   public constructor(private readonly context: vscode.ExtensionContext) {
     this.metadataStore = new MetadataStore(context);
+    this.snapshotCache = new SessionSnapshotCache(context, this.output);
     this.settings = getCurrentSettings();
     this.state = {
       currentProjectOnly: this.settings.currentProjectOnlyDefault,
@@ -79,21 +84,21 @@ class SessionManagerController {
       }),
       vscode.commands.registerCommand("codexSessions.toggleCurrentProjectOnly", async () => {
         this.state.currentProjectOnly = !this.state.currentProjectOnly;
-        await this.refresh();
+        await this.renderCurrentSnapshotOrRefresh();
       }),
       vscode.commands.registerCommand("codexSessions.showCurrentWorkspace", async () => {
         this.state.currentProjectOnly = true;
-        await this.refresh();
+        await this.renderCurrentSnapshotOrRefresh();
         await vscode.window.showInformationMessage(t("showCurrentWorkspaceMessage"));
       }),
       vscode.commands.registerCommand("codexSessions.showAllWorkspaces", async () => {
         this.state.currentProjectOnly = false;
-        await this.refresh();
+        await this.renderCurrentSnapshotOrRefresh();
         await vscode.window.showInformationMessage(t("showAllWorkspacesMessage"));
       }),
       vscode.commands.registerCommand("codexSessions.toggleArchived", async () => {
         this.state.showArchived = !this.state.showArchived;
-        await this.refresh();
+        await this.renderCurrentSnapshotOrRefresh();
       }),
       vscode.commands.registerCommand("codexSessions.setSearchFilter", async () => {
         const value = await vscode.window.showInputBox({
@@ -102,12 +107,12 @@ class SessionManagerController {
         });
         if (value !== undefined) {
           this.state.searchTerm = value.trim();
-          await this.refresh();
+          await this.renderCurrentSnapshotOrRefresh();
         }
       }),
       vscode.commands.registerCommand("codexSessions.clearSearchFilter", async () => {
         this.state.searchTerm = "";
-        await this.refresh();
+        await this.renderCurrentSnapshotOrRefresh();
       }),
       vscode.commands.registerCommand("codexSessions.searchAndOpenSession", async () => {
         await this.searchAndOpenSession();
@@ -162,7 +167,8 @@ class SessionManagerController {
         }
         const nextPinned = !session.local.pinned;
         await this.metadataStore.update(this.metadataKeyFor(session), { pinned: nextPinned });
-        await this.refresh();
+        await this.renderCurrentSnapshotOrRefresh();
+        await this.writeCurrentSnapshotCache();
         await vscode.window.showInformationMessage(t(nextPinned ? "sessionPinned" : "sessionUnpinned", { title: session.displayName }));
       }),
       vscode.commands.registerCommand("codexSessions.toggleUnreadSession", async (node?: SessionNode) => {
@@ -172,7 +178,8 @@ class SessionManagerController {
         }
         const nextUnread = !session.local.unread;
         await this.metadataStore.update(this.metadataKeyFor(session), { unread: nextUnread });
-        await this.refresh();
+        await this.renderCurrentSnapshotOrRefresh();
+        await this.writeCurrentSnapshotCache();
         await vscode.window.showInformationMessage(t(nextUnread ? "sessionMarkedUnread" : "sessionMarkedRead", { title: session.displayName }));
       }),
       vscode.commands.registerCommand("codexSessions.archiveSession", async (node?: SessionNode) => {
@@ -322,10 +329,12 @@ class SessionManagerController {
         this.settings = getCurrentSettings();
         this.state.currentProjectOnly = this.state.currentProjectOnly && this.settings.currentProjectOnlyDefault ? true : this.state.currentProjectOnly;
         this.scheduleRefreshLoop();
-        await this.refresh();
+        await this.renderCurrentSnapshotOrRefresh();
+        this.refreshInBackground("configuration");
       }),
       vscode.workspace.onDidChangeWorkspaceFolders(async () => {
-        await this.refresh();
+        await this.renderCurrentSnapshotOrCache();
+        this.refreshInBackground("workspaceFolders");
         await this.openPendingSessionAfterWorkspaceSwitch();
       }),
       this.treeView.onDidChangeVisibility(async (event) => {
@@ -333,13 +342,14 @@ class SessionManagerController {
           return;
         }
         this.state.currentProjectOnly = true;
-        await this.refresh();
+        await this.renderCurrentSnapshotOrRefresh();
       })
     );
 
     this.scheduleRefreshLoop();
-    await this.refresh();
+    await this.renderCachedSnapshotIfAvailable();
     await this.openPendingSessionAfterWorkspaceSwitch();
+    this.refreshInBackground("activate");
   }
 
   public dispose(): void {
@@ -361,21 +371,88 @@ class SessionManagerController {
   }
 
   private async refresh(): Promise<void> {
+    if (this.refreshPromise) {
+      await this.refreshPromise;
+      return;
+    }
+
+    this.refreshPromise = this.refreshFromSource();
     try {
-      const snapshot = await this.repository.load(this.state, this.settings);
-      const groups = this.repository.buildGroups(snapshot);
-      this.treeProvider.setSnapshot(snapshot, groups);
-      this.treeView.message = this.buildViewMessage(snapshot);
-      await vscode.commands.executeCommand("setContext", "codexSessions.currentProjectOnly", this.state.currentProjectOnly);
-      await vscode.commands.executeCommand("setContext", "codexSessions.showArchived", this.state.showArchived);
+      await this.refreshPromise;
+    } finally {
+      this.refreshPromise = null;
+    }
+  }
+
+  private refreshInBackground(reason: string): void {
+    this.output.appendLine(`[extension] background refresh requested: ${reason}`);
+    void this.refresh();
+  }
+
+  private async refreshFromSource(): Promise<void> {
+    try {
+      const snapshot = await this.repository.loadFull(this.settings);
+      await this.renderFullSnapshot(snapshot, false);
+      if (this.settings.enableDiskCache && this.fullSnapshot) {
+        await this.snapshotCache.write(this.fullSnapshot);
+      }
     } catch (error) {
       this.output.appendLine(`[extension] refresh failed: ${String(error)}`);
       this.treeView.message = `Load failed: ${String(error)}`;
     }
   }
 
-  private buildViewMessage(snapshot: { sourceMode: string; cliAvailable: boolean; warning: string; searchTerm: string }): string {
+  private async renderCurrentSnapshotOrRefresh(): Promise<void> {
+    if (await this.renderCurrentSnapshotOrCache()) {
+      return;
+    }
+    await this.refresh();
+  }
+
+  private async renderCurrentSnapshotOrCache(): Promise<boolean> {
+    if (this.fullSnapshot) {
+      await this.renderFullSnapshot(this.fullSnapshot, true);
+      return true;
+    }
+    return await this.renderCachedSnapshotIfAvailable();
+  }
+
+  private async renderCachedSnapshotIfAvailable(): Promise<boolean> {
+    if (!this.settings.enableDiskCache) {
+      return false;
+    }
+
+    const cached = await this.snapshotCache.read();
+    if (!cached) {
+      return false;
+    }
+
+    await this.renderFullSnapshot(cached, true);
+    return true;
+  }
+
+  private async renderFullSnapshot(snapshot: RepositorySnapshot, cached: boolean): Promise<void> {
+    this.fullSnapshot = this.repository.rehydrateSnapshot(snapshot);
+    const visibleSnapshot = this.repository.filterSnapshot(this.fullSnapshot, this.state);
+    const groups = this.repository.buildGroups(visibleSnapshot);
+    this.treeProvider.setSnapshot(visibleSnapshot, groups);
+    this.treeView.message = this.buildViewMessage(visibleSnapshot, cached);
+    await vscode.commands.executeCommand("setContext", "codexSessions.currentProjectOnly", this.state.currentProjectOnly);
+    await vscode.commands.executeCommand("setContext", "codexSessions.showArchived", this.state.showArchived);
+  }
+
+  private async writeCurrentSnapshotCache(): Promise<void> {
+    if (!this.settings.enableDiskCache || !this.fullSnapshot) {
+      return;
+    }
+    await this.snapshotCache.write(this.fullSnapshot);
+  }
+
+  private buildViewMessage(snapshot: { sourceMode: string; cliAvailable: boolean; warning: string; searchTerm: string }, cached = false): string {
     const parts = [`source=${snapshot.sourceMode}`];
+    if (cached) {
+      parts.push(t("cachedSnapshotLabel"));
+    }
     parts.push(snapshot.cliAvailable ? "cli=ready" : "cli=missing");
     parts.push(hasOfficialCodexExtension() ? t("officialReady") : t("officialMissing"));
     if (this.state.currentProjectOnly) {
@@ -426,7 +503,8 @@ class SessionManagerController {
     }
     const nextValue = value.trim();
     await this.metadataStore.update(this.metadataKeyFor(session), { [field]: nextValue });
-    await this.refresh();
+    await this.renderCurrentSnapshotOrRefresh();
+    await this.writeCurrentSnapshotCache();
     if (field === "alias") {
       await vscode.window.showInformationMessage(t("sessionRenamedMessage", { title: nextValue || session.displayName }));
       return;
@@ -440,14 +518,7 @@ class SessionManagerController {
 
   private async searchAndOpenSession(): Promise<void> {
     await this.runSafe(async () => {
-      const snapshot = await this.repository.load(
-        {
-          currentProjectOnly: false,
-          showArchived: true,
-          searchTerm: ""
-        },
-        this.settings
-      );
+      const snapshot = await this.getFullSnapshotForSearch();
       const sessions = snapshot.sessions;
       if (sessions.length === 0) {
         await vscode.window.showInformationMessage(t("noSessionsAvailable"));
@@ -467,6 +538,23 @@ class SessionManagerController {
 
       await this.openPrimarySessionTarget(selected.session);
     });
+  }
+
+  private async getFullSnapshotForSearch(): Promise<RepositorySnapshot> {
+    if (this.fullSnapshot) {
+      return this.fullSnapshot;
+    }
+
+    if (await this.renderCachedSnapshotIfAvailable()) {
+      return this.fullSnapshot!;
+    }
+
+    await vscode.window.showInformationMessage(t("loadingSessionsForSearch"));
+    await this.refresh();
+    if (!this.fullSnapshot) {
+      throw new Error(t("noSessionsAvailable"));
+    }
+    return this.fullSnapshot;
   }
 
   private toSearchQuickPickItem(session: SessionRecord): SearchSessionQuickPickItem {

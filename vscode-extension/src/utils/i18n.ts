@@ -5,6 +5,7 @@ type MessageKey =
   | "archivedGroupLabel"
   | "archivedSourceLabel"
   | "allWorkspacesLabel"
+  | "cachedSnapshotLabel"
   | "currentGroupDescription"
   | "currentGroupLabel"
   | "desktopAppSourceLabel"
@@ -19,6 +20,7 @@ type MessageKey =
   | "fallbackActive"
   | "forkStarted"
   | "inputSearchFilter"
+  | "loadingSessionsForSearch"
   | "metadataSavedMessage"
   | "missingOfficial"
   | "noSessionsAvailable"
@@ -68,6 +70,7 @@ const en: Record<MessageKey, string> = {
   archivedGroupLabel: "Archived",
   archivedSourceLabel: "Archived",
   allWorkspacesLabel: "All Workspaces",
+  cachedSnapshotLabel: "cached",
   currentGroupDescription: "Sessions matched to the current workspace",
   currentGroupLabel: "Current Workspace",
   desktopAppSourceLabel: "Desktop App",
@@ -82,6 +85,7 @@ const en: Record<MessageKey, string> = {
   fallbackActive: "fallback active",
   forkStarted: "Started Codex fork in the terminal.",
   inputSearchFilter: "Set a session search filter",
+  loadingSessionsForSearch: "No cache is available yet. Loading Codex sessions before search.",
   metadataSavedMessage: "Saved {label} for \"{title}\".",
   missingOfficial: "Official Codex VS Code extension was not detected. Opened the local details page instead.",
   noSessionsAvailable: "No Codex sessions were found.",
@@ -132,6 +136,7 @@ const zh: Record<MessageKey, string> = {
   archivedGroupLabel: "已归档",
   archivedSourceLabel: "归档",
   allWorkspacesLabel: "全部工作区",
+  cachedSnapshotLabel: "已缓存",
   currentGroupDescription: "当前工作区命中的会话",
   currentGroupLabel: "本工作区",
   desktopAppSourceLabel: "桌面端",
@@ -146,6 +151,7 @@ const zh: Record<MessageKey, string> = {
   fallbackActive: "已启用兜底",
   forkStarted: "已在终端启动 Codex 派生。",
   inputSearchFilter: "设置会话搜索过滤",
+  loadingSessionsForSearch: "当前还没有缓存，正在先加载 Codex 会话再搜索。",
   metadataSavedMessage: "已保存“{title}”的{label}。",
   missingOfficial: "未检测到官方 Codex VS Code 插件，已回退到本地详情页。",
   noSessionsAvailable: "没有找到 Codex 会话。",

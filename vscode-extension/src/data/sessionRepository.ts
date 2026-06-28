@@ -47,6 +47,11 @@ export class SessionRepository {
   }
 
   public async load(state: SessionFilterState, settings: ExtensionSettings): Promise<RepositorySnapshot> {
+    const snapshot = await this.loadFull(settings);
+    return this.filterSnapshot(snapshot, state);
+  }
+
+  public async loadFull(settings: ExtensionSettings): Promise<RepositorySnapshot> {
     const currentRoots = workspaceRoots();
     const hints = this.filesystemProvider.getWorkspaceHints();
     const metadataById = this.metadataStore.getAll();
@@ -117,8 +122,6 @@ export class SessionRepository {
         )
       )
       .sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0));
-    const visibleSessions = filterSessions(sessions, state);
-
     this.logger.appendLine(
       [
         "[repository] load",
@@ -127,21 +130,58 @@ export class SessionRepository {
         `idDeduped=${idDeduped.length}`,
         `deduped=${rawDeduped.length}`,
         `archived=${archivedCount}`,
-        `visible=${visibleSessions.length}`,
+        `full=${sessions.length}`
+      ].join(" ")
+    );
+
+    return {
+      sessions,
+      sourceMode,
+      cliAvailable,
+      currentWorkspaceRoots: currentRoots,
+      searchTerm: "",
+      lastUpdatedAt: formatIsoNow(),
+      warning
+    };
+  }
+
+  public filterSnapshot(snapshot: RepositorySnapshot, state: SessionFilterState): RepositorySnapshot {
+    const sessions = filterSessions(snapshot.sessions, state);
+    this.logger.appendLine(
+      [
+        "[repository] filter",
+        `visible=${sessions.length}`,
         `showArchived=${state.showArchived}`,
         `currentProjectOnly=${state.currentProjectOnly}`,
         `search=${state.searchTerm || "<empty>"}`
       ].join(" ")
     );
+    return {
+      ...snapshot,
+      sessions,
+      searchTerm: state.searchTerm
+    };
+  }
+
+  public rehydrateSnapshot(snapshot: RepositorySnapshot): RepositorySnapshot {
+    const currentRoots = workspaceRoots();
+    const metadataById = this.metadataStore.getAll();
+    const sessions = snapshot.sessions
+      .map((session) =>
+        toSessionRecord(
+          session,
+          metadataForRawSession(session, metadataById),
+          currentRoots,
+          session.workspaceRoot || session.cwd
+        )
+      )
+      .sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0));
 
     return {
-      sessions: visibleSessions,
-      sourceMode,
-      cliAvailable,
+      ...snapshot,
+      sessions,
       currentWorkspaceRoots: currentRoots,
-      searchTerm: state.searchTerm,
-      lastUpdatedAt: formatIsoNow(),
-      warning
+      searchTerm: ""
     };
   }
 
@@ -186,6 +226,7 @@ export function getCurrentSettings(): ExtensionSettings {
     detailTurnFetchMode: config.get<ExtensionSettings["detailTurnFetchMode"]>("detailTurnFetchMode", "summary"),
     codexHomeOverride: config.get<string>("codexHomeOverride", ""),
     codexCliPath: config.get<string>("codexCliPath", "codex"),
-    focusCurrentWorkspaceOnViewOpen: config.get<boolean>("focusCurrentWorkspaceOnViewOpen", false)
+    focusCurrentWorkspaceOnViewOpen: config.get<boolean>("focusCurrentWorkspaceOnViewOpen", false),
+    enableDiskCache: config.get<boolean>("enableDiskCache", true)
   };
 }

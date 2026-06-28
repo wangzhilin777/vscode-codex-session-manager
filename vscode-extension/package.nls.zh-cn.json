@@ -41,5 +41,6 @@
   "configuration.detailTurnFetchMode.description": "本地详情文档渲染多少对话细节。",
   "configuration.codexHomeOverride.description": "可选的 CODEX_HOME 绝对路径覆盖值。",
   "configuration.codexCliPath.description": "用于 app-server 访问和会话操作的 CLI 可执行文件。",
-  "configuration.focusCurrentWorkspaceOnViewOpen.description": "视图变为可见时，自动回到本工作区过滤。"
+  "configuration.focusCurrentWorkspaceOnViewOpen.description": "视图变为可见时，自动回到本工作区过滤。",
+  "configuration.enableDiskCache.description": "进入视图时先显示上次缓存的会话快照，再在后台刷新真实数据。"
 }

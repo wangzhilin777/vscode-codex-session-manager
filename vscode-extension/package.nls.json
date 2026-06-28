@@ -41,5 +41,6 @@
   "configuration.detailTurnFetchMode.description": "How much detail to render in the local details document.",
   "configuration.codexHomeOverride.description": "Optional absolute path that overrides the default CODEX_HOME.",
   "configuration.codexCliPath.description": "CLI executable used for app-server access and session actions.",
-  "configuration.focusCurrentWorkspaceOnViewOpen.description": "When the view becomes visible, automatically return to the current-workspace filter."
+  "configuration.focusCurrentWorkspaceOnViewOpen.description": "When the view becomes visible, automatically return to the current-workspace filter.",
+  "configuration.enableDiskCache.description": "Show the last cached session snapshot immediately, then refresh in the background."
 }
