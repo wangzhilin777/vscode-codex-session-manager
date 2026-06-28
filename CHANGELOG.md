@@ -1,5 +1,10 @@
 # 更新日志
 
+## 0.1.20
+
+- 移除 `onStartupFinished` 激活事件，避免 VS Code 启动阶段过早触发官方 Codex Webview。
+- 保留打开会话管理视图和执行命令时的按需激活，降低与官方 Codex 插件 Webview 初始化的耦合。
+
 ## 0.1.19
 
 - 新增会话快照 JSON 磁盘缓存，存放在 VS Code 扩展 `globalStorage`，首次进入视图会先展示上次缓存，再后台刷新真实数据并覆盖缓存。
