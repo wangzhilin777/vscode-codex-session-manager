@@ -1,5 +1,7 @@
 type MessageKey =
   | "activityName"
+  | "activeSessionsGroupDescription"
+  | "activeSessionsGroupLabel"
   | "archivedBadge"
   | "archivedGroupDescription"
   | "archivedGroupLabel"
@@ -24,6 +26,8 @@ type MessageKey =
   | "metadataSavedMessage"
   | "missingOfficial"
   | "noSessionsAvailable"
+  | "noWorkspaceGroupDescription"
+  | "noWorkspaceGroupLabel"
   | "noteLabel"
   | "officialMissing"
   | "officialOpenFailed"
@@ -65,6 +69,8 @@ type MessageKey =
 
 const en: Record<MessageKey, string> = {
   activityName: "Codex Sessions",
+  activeSessionsGroupDescription: "Active sessions",
+  activeSessionsGroupLabel: "Sessions",
   archivedBadge: "Archived",
   archivedGroupDescription: "Archived sessions",
   archivedGroupLabel: "Archived",
@@ -89,12 +95,14 @@ const en: Record<MessageKey, string> = {
   metadataSavedMessage: "Saved {label} for \"{title}\".",
   missingOfficial: "Official Codex VS Code extension was not detected. Opened the local details page instead.",
   noSessionsAvailable: "No Codex sessions were found.",
+  noWorkspaceGroupDescription: "Sessions that do not have a workspace assignment",
+  noWorkspaceGroupLabel: "No Workspace",
   noteLabel: "Note",
   officialMissing: "official missing",
   officialOpenFailed: "Failed to open the official Codex conversation. Opened the local details page instead.",
   officialReady: "official ready",
   openOfficialTooltip: "Click to continue in the official Codex panel. Use the context menu for the local details page.",
-  otherGroupDescription: "Sessions from other workspaces or historical projects",
+  otherGroupDescription: "Sessions assigned to other workspaces",
   otherGroupLabel: "Other Workspaces",
   projectLabel: "Project",
   pinnedBadge: "Pinned",
@@ -131,6 +139,8 @@ const en: Record<MessageKey, string> = {
 
 const zh: Record<MessageKey, string> = {
   activityName: "Codex 会话",
+  activeSessionsGroupDescription: "未归档的当前会话",
+  activeSessionsGroupLabel: "会话",
   archivedBadge: "已归档",
   archivedGroupDescription: "已归档的历史会话",
   archivedGroupLabel: "已归档",
@@ -155,12 +165,14 @@ const zh: Record<MessageKey, string> = {
   metadataSavedMessage: "已保存“{title}”的{label}。",
   missingOfficial: "未检测到官方 Codex VS Code 插件，已回退到本地详情页。",
   noSessionsAvailable: "没有找到 Codex 会话。",
+  noWorkspaceGroupDescription: "还没有工作区归属的会话",
+  noWorkspaceGroupLabel: "无工作区",
   noteLabel: "备注",
   officialMissing: "官方缺失",
   officialOpenFailed: "打开官方 Codex 会话失败，已回退到本地详情页。",
   officialReady: "官方就绪",
   openOfficialTooltip: "单击会优先在官方 Codex 继续；本地详情页请从右键菜单打开。",
-  otherGroupDescription: "其他工作区或历史项目",
+  otherGroupDescription: "已归属到其他工作区的会话",
   otherGroupLabel: "其他工作区",
   projectLabel: "项目",
   pinnedBadge: "已置顶",

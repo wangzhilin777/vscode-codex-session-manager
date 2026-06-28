@@ -33,7 +33,22 @@ test("toSessionRecord marks current project and applies alias", () => {
   );
 
   assert.equal(record.currentProject, true);
+  assert.equal(record.workspaceAssigned, true);
   assert.equal(record.displayName, "Alias One");
+});
+
+test("toSessionRecord keeps path-only sessions outside workspace-assigned buckets", () => {
+  configureLanguage("en");
+  const record = toSessionRecord(
+    makeRaw("path-only", "E:\\Workspace\\VSCode\\detached"),
+    { alias: "", projectTag: "", note: "" },
+    ["E:\\Workspace\\VSCode\\test"],
+    ""
+  );
+
+  assert.equal(record.currentProject, false);
+  assert.equal(record.workspaceAssigned, false);
+  assert.equal(record.projectLabel, "detached");
 });
 
 test("toSessionRecord normalizes markdown-style titles", () => {
@@ -252,6 +267,31 @@ test("buildGroups places archived sessions in the current workspace before other
     ["current", "other"]
   );
   assert.deepEqual(groups[0]?.sessions.map((session) => session.id), ["archived", "current"]);
+});
+
+test("buildGroups splits workspace-assigned sessions from no-workspace sessions", () => {
+  configureLanguage("en");
+  const otherWorkspace = toSessionRecord(
+    makeRaw("other-workspace", "E:\\Workspace\\VSCode\\customer-a"),
+    { alias: "", projectTag: "", note: "" },
+    ["E:\\Workspace\\VSCode\\test"],
+    "E:\\Workspace\\VSCode\\customer-a"
+  );
+  const noWorkspace = toSessionRecord(
+    makeRaw("no-workspace", "E:\\Workspace\\VSCode\\scratch-pad"),
+    { alias: "", projectTag: "", note: "" },
+    ["E:\\Workspace\\VSCode\\test"],
+    ""
+  );
+
+  const groups = buildGroups([noWorkspace, otherWorkspace]);
+
+  assert.deepEqual(
+    groups.map((group) => group.kind),
+    ["other", "noWorkspace"]
+  );
+  assert.deepEqual(groups[0]?.sessions.map((session) => session.id), ["other-workspace"]);
+  assert.deepEqual(groups[1]?.sessions.map((session) => session.id), ["no-workspace"]);
 });
 
 test("projectBucketsForGroup merges archived sessions with the matching project bucket", () => {

@@ -105,6 +105,7 @@ export interface SessionRecord extends RawSessionRecord {
   local: LocalSessionMetadata;
   displayName: string;
   workspaceRoot: string;
+  workspaceAssigned: boolean;
   projectKey: string;
   projectLabel: string;
   projectDescription: string;
@@ -133,7 +134,7 @@ export interface SessionGroup {
   id: string;
   label: string;
   description: string;
-  kind: "current" | "other" | "uncategorized" | "archived";
+  kind: "current" | "other" | "noWorkspace" | "uncategorized" | "archived";
   sessions: SessionRecord[];
 }
 

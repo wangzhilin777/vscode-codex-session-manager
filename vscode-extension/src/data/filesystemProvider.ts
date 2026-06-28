@@ -190,7 +190,7 @@ function parseUserTitleFromRows(rows: Array<Record<string, unknown>>): string {
 function fileTimestamp(filePath: string): number | null {
   try {
     const stat = fs.statSync(filePath);
-    const timestampMs = Math.max(stat.mtimeMs, stat.ctimeMs);
+    const timestampMs = stat.mtimeMs || stat.ctimeMs;
     return Number.isFinite(timestampMs) && timestampMs > 0 ? timestampMs / 1000 : null;
   } catch {
     return null;

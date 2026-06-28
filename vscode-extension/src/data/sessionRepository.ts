@@ -172,7 +172,7 @@ export class SessionRepository {
           session,
           metadataForRawSession(session, metadataById),
           currentRoots,
-          session.workspaceRoot || session.cwd
+          session.workspaceAssigned ? session.workspaceRoot || session.cwd : ""
         )
       )
       .sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0));

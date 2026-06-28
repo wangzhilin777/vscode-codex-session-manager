@@ -8,7 +8,7 @@ const PROJECT_LABEL_PREFIX = "\u00a0\u00a0";
 const ARCHIVE_LABEL_PREFIX = "\u00a0\u00a0\u00a0\u00a0";
 const SESSION_LABEL_PREFIX = "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0";
 
-export type TreeNode = GroupNode | ProjectNode | ProjectArchiveNode | SessionNode;
+export type TreeNode = GroupNode | ProjectNode | ProjectActiveNode | ProjectArchiveNode | SessionNode;
 
 export class GroupNode {
   public constructor(public readonly group: SessionGroup) {}
@@ -16,6 +16,10 @@ export class GroupNode {
 
 export class ProjectNode {
   public constructor(public readonly group: SessionGroup, public readonly project: ProjectBucket) {}
+}
+
+export class ProjectActiveNode {
+  public constructor(public readonly group: SessionGroup, public readonly project: ProjectBucket, public readonly sessions: SessionRecord[]) {}
 }
 
 export class ProjectArchiveNode {
@@ -67,6 +71,15 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<TreeNode> {
       item.tooltip = element.project.description || element.project.label;
       item.contextValue = "project";
       item.iconPath = new vscode.ThemeIcon("folder");
+      return item;
+    }
+
+    if (element instanceof ProjectActiveNode) {
+      const item = new vscode.TreeItem(`${ARCHIVE_LABEL_PREFIX}${t("activeSessionsGroupLabel")}`, vscode.TreeItemCollapsibleState.Expanded);
+      item.description = `${element.sessions.length}`;
+      item.tooltip = t("activeSessionsGroupDescription");
+      item.contextValue = "activeBucket";
+      item.iconPath = new vscode.ThemeIcon("comment-discussion");
       return item;
     }
 
@@ -129,11 +142,18 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<TreeNode> {
     if (element instanceof ProjectNode) {
       const active = element.project.sessions.filter((session) => !session.archived);
       const archived = element.project.sessions.filter((session) => session.archived);
-      const children: TreeNode[] = active.map((session) => new SessionNode(element.group, element.project, session));
+      const children: TreeNode[] = [];
+      if (active.length > 0) {
+        children.push(new ProjectActiveNode(element.group, element.project, active));
+      }
       if (archived.length > 0) {
         children.push(new ProjectArchiveNode(element.group, element.project, archived));
       }
       return children;
+    }
+
+    if (element instanceof ProjectActiveNode) {
+      return element.sessions.map((session) => new SessionNode(element.group, element.project, session));
     }
 
     if (element instanceof ProjectArchiveNode) {

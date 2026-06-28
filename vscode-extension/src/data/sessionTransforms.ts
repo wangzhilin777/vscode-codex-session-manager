@@ -128,8 +128,10 @@ export function toSessionRecord(
   workspaceHint: string
 ): SessionRecord {
   const preferredRoot = pickLongestMatchingRoot(raw.cwd, workspaceRoots);
+  const normalizedHint = normalizeFsPath(workspaceHint);
   const resolvedRoot = preferredRoot || workspaceHint || raw.cwd;
   const currentProject = !!preferredRoot;
+  const workspaceAssigned = currentProject || !!normalizedHint;
   const tagged = local.projectTag.trim();
   const projectKey = projectKeyFor(tagged, resolvedRoot);
   const projectLabel = tagged || basenameOrPath(resolvedRoot) || UNKNOWN_PROJECT_LABEL;
@@ -143,6 +145,7 @@ export function toSessionRecord(
     local,
     displayName,
     workspaceRoot: toDisplayPath(resolvedRoot),
+    workspaceAssigned,
     projectKey,
     projectLabel,
     projectDescription,
@@ -230,7 +233,10 @@ function sortSessions(sessions: SessionRecord[]): SessionRecord[] {
 export function buildGroups(sessions: readonly SessionRecord[]): SessionGroup[] {
   const current = sessions.filter((session) => session.currentProject);
   const other = sessions.filter(
-    (session) => !session.currentProject && session.projectKey !== UNKNOWN_PROJECT_LABEL
+    (session) => !session.currentProject && session.workspaceAssigned && session.projectKey !== UNKNOWN_PROJECT_LABEL
+  );
+  const noWorkspace = sessions.filter(
+    (session) => !session.currentProject && !session.workspaceAssigned && session.projectKey !== UNKNOWN_PROJECT_LABEL
   );
   const uncategorized = sessions.filter(
     (session) => !session.projectKey || session.projectKey === UNKNOWN_PROJECT_LABEL
@@ -250,6 +256,13 @@ export function buildGroups(sessions: readonly SessionRecord[]): SessionGroup[] 
       description: t("otherGroupDescription"),
       kind: "other",
       sessions: sortSessions(other)
+    },
+    {
+      id: "noWorkspace",
+      label: t("noWorkspaceGroupLabel"),
+      description: t("noWorkspaceGroupDescription"),
+      kind: "noWorkspace",
+      sessions: sortSessions(noWorkspace)
     },
     {
       id: "uncategorized",
@@ -286,7 +299,7 @@ export function resolveWorkspaceHint(sessionId: string, cwd: string, hints: Read
   if (hinted) {
     return hinted;
   }
-  return cwd;
+  return "";
 }
 
 export function sessionMatchesWorkspace(session: SessionRecord, workspaceRoot: string): boolean {
