@@ -7,7 +7,7 @@
   "command.toggleCurrentProjectOnly.title": "Codex Sessions: Toggle Current Workspace Filter",
   "command.showCurrentWorkspace.title": "Codex Sessions: Show Current Workspace",
   "command.showAllWorkspaces.title": "Codex Sessions: Show All Workspaces",
-  "command.toggleArchived.title": "Codex Sessions: Toggle Archived",
+  "command.toggleArchived.title": "Codex Sessions: Show / Hide Archived Sessions",
   "command.setSearchFilter.title": "Codex Sessions: Set Search Filter",
   "command.clearSearchFilter.title": "Codex Sessions: Clear Search Filter",
   "command.searchAndOpenSession.title": "Codex Sessions: Search And Open Session",

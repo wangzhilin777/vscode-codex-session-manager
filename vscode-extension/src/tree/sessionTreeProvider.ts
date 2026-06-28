@@ -4,9 +4,9 @@ import { formatRelativeTime } from "../utils/time";
 import { projectBucketsForGroup } from "../data/sessionTransforms";
 import { t } from "../utils/i18n";
 
-const PROJECT_LABEL_PREFIX = "  ";
-const ARCHIVE_LABEL_PREFIX = "    ";
-const SESSION_LABEL_PREFIX = "      ";
+const PROJECT_LABEL_PREFIX = "\u00a0\u00a0";
+const ARCHIVE_LABEL_PREFIX = "\u00a0\u00a0\u00a0\u00a0";
+const SESSION_LABEL_PREFIX = "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0";
 
 export type TreeNode = GroupNode | ProjectNode | ProjectArchiveNode | SessionNode;
 

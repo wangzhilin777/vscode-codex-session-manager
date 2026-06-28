@@ -7,7 +7,7 @@
   "command.toggleCurrentProjectOnly.title": "Codex 会话：切换本工作区过滤",
   "command.showCurrentWorkspace.title": "Codex 会话：显示本工作区",
   "command.showAllWorkspaces.title": "Codex 会话：显示全部工作区",
-  "command.toggleArchived.title": "Codex 会话：切换归档",
+  "command.toggleArchived.title": "Codex 会话：显示/隐藏归档会话",
   "command.setSearchFilter.title": "Codex 会话：设置搜索过滤",
   "command.clearSearchFilter.title": "Codex 会话：清除搜索过滤",
   "command.searchAndOpenSession.title": "Codex 会话：搜索并打开会话",
