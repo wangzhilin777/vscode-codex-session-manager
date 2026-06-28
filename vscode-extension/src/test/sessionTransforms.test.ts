@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildGroups, dedupeRawSessions, filterSessions, projectBucketsForGroup, toSessionRecord } from "../data/sessionTransforms";
+import { buildGroups, collectKnownWorkspaceRoots, dedupeRawSessions, filterSessions, projectBucketsForGroup, toSessionRecord } from "../data/sessionTransforms";
 import { RawSessionRecord } from "../types";
 import { configureLanguage } from "../utils/i18n";
 
@@ -49,6 +49,28 @@ test("toSessionRecord keeps path-only sessions outside workspace-assigned bucket
   assert.equal(record.currentProject, false);
   assert.equal(record.workspaceAssigned, false);
   assert.equal(record.projectLabel, "detached");
+});
+
+test("toSessionRecord merges sessions into a known workspace root even without a direct hint", () => {
+  configureLanguage("en");
+  const knownRoots = collectKnownWorkspaceRoots(
+    ["E:\\Workspace\\VSCode\\test"],
+    {
+      known: "E:\\Workspace\\cachelocal"
+    }
+  );
+  const record = toSessionRecord(
+    makeRaw("known-root", "E:\\Workspace\\cachelocal"),
+    { alias: "", projectTag: "", note: "" },
+    ["E:\\Workspace\\VSCode\\test"],
+    "",
+    knownRoots
+  );
+
+  assert.equal(record.currentProject, false);
+  assert.equal(record.workspaceAssigned, true);
+  assert.equal(record.projectLabel, "cachelocal");
+  assert.equal(record.workspaceRoot, "E:\\Workspace\\cachelocal");
 });
 
 test("toSessionRecord normalizes markdown-style titles", () => {
@@ -314,4 +336,24 @@ test("projectBucketsForGroup merges archived sessions with the matching project 
 
   assert.equal(buckets.length, 1);
   assert.deepEqual(buckets[0]?.sessions.map((session) => session.id), ["active", "archived"]);
+});
+
+test("collectKnownWorkspaceRoots keeps unique normalized workspace roots", () => {
+  const roots = collectKnownWorkspaceRoots(
+    ["E:\\Workspace\\VSCode\\test"],
+    {
+      first: "e:\\Workspace\\cachelocal",
+      second: "E:\\Workspace\\cachelocal"
+    },
+    [
+      {
+        workspaceAssigned: true,
+        workspaceRoot: "E:\\Workspace\\VSCode\\test"
+      }
+    ]
+  );
+
+  assert.equal(roots.length, 2);
+  assert.equal(roots[0], "E:\\Workspace\\VSCode\\test");
+  assert.equal(roots[1]?.toLowerCase(), "e:\\workspace\\cachelocal");
 });

@@ -125,13 +125,16 @@ export function toSessionRecord(
   raw: RawSessionRecord,
   local: LocalSessionMetadata,
   workspaceRoots: readonly string[],
-  workspaceHint: string
+  workspaceHint: string,
+  knownWorkspaceRoots: readonly string[] = workspaceRoots
 ): SessionRecord {
   const preferredRoot = pickLongestMatchingRoot(raw.cwd, workspaceRoots);
   const normalizedHint = normalizeFsPath(workspaceHint);
-  const resolvedRoot = preferredRoot || workspaceHint || raw.cwd;
+  const inferredRoot = pickLongestMatchingRoot(raw.cwd, knownWorkspaceRoots);
+  const assignedRoot = preferredRoot || inferredRoot || workspaceHint;
+  const resolvedRoot = assignedRoot || raw.cwd;
   const currentProject = !!preferredRoot;
-  const workspaceAssigned = currentProject || !!normalizedHint;
+  const workspaceAssigned = !!assignedRoot || !!normalizedHint;
   const tagged = local.projectTag.trim();
   const projectKey = projectKeyFor(tagged, resolvedRoot);
   const projectLabel = tagged || basenameOrPath(resolvedRoot) || UNKNOWN_PROJECT_LABEL;
@@ -292,6 +295,40 @@ export function projectBucketsForGroup(group: SessionGroup): ProjectBucket[] {
     ...bucket,
     sessions: sortSessions(bucket.sessions)
   }));
+}
+
+export function collectKnownWorkspaceRoots(
+  currentWorkspaceRoots: readonly string[],
+  workspaceHints: Readonly<Record<string, string>>,
+  sessions: readonly Pick<SessionRecord, "workspaceAssigned" | "workspaceRoot">[] = []
+): string[] {
+  const unique = new Map<string, string>();
+
+  for (const root of currentWorkspaceRoots) {
+    const normalized = normalizeFsPath(root);
+    if (normalized) {
+      unique.set(normalized, root);
+    }
+  }
+
+  for (const root of Object.values(workspaceHints)) {
+    const normalized = normalizeFsPath(root);
+    if (normalized) {
+      unique.set(normalized, root);
+    }
+  }
+
+  for (const session of sessions) {
+    if (!session.workspaceAssigned) {
+      continue;
+    }
+    const normalized = normalizeFsPath(session.workspaceRoot);
+    if (normalized) {
+      unique.set(normalized, session.workspaceRoot);
+    }
+  }
+
+  return [...unique.values()];
 }
 
 export function resolveWorkspaceHint(sessionId: string, cwd: string, hints: Readonly<Record<string, string>>): string {

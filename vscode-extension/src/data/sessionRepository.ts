@@ -3,7 +3,7 @@ import { CodexCliService } from "../actions/codexCliService";
 import { CodexAppServerClient } from "./appServerClient";
 import { CodexFilesystemProvider } from "./filesystemProvider";
 import { metadataForRawSession } from "./sessionMetadata";
-import { buildGroups, dedupeRawSessions, filterSessions, resolveWorkspaceHint, toSessionRecord } from "./sessionTransforms";
+import { buildGroups, collectKnownWorkspaceRoots, dedupeRawSessions, filterSessions, resolveWorkspaceHint, toSessionRecord } from "./sessionTransforms";
 import { MetadataStore } from "../storage/metadataStore";
 import { ExtensionSettings, Logger, RawSessionRecord, RepositorySnapshot, SessionFilterState, SessionGroup, SessionRecord, SessionSourceKind } from "../types";
 import { formatIsoNow } from "../utils/time";
@@ -54,6 +54,7 @@ export class SessionRepository {
   public async loadFull(settings: ExtensionSettings): Promise<RepositorySnapshot> {
     const currentRoots = workspaceRoots();
     const hints = this.filesystemProvider.getWorkspaceHints();
+    const knownWorkspaceRoots = collectKnownWorkspaceRoots(currentRoots, hints);
     const metadataById = this.metadataStore.getAll();
     const cliAvailable = await this.cliService.checkAvailability();
 
@@ -118,7 +119,8 @@ export class SessionRepository {
           raw,
           metadataForRawSession(raw, metadataById),
           currentRoots,
-          resolveWorkspaceHint(raw.id, raw.cwd, hints)
+          resolveWorkspaceHint(raw.id, raw.cwd, hints),
+          knownWorkspaceRoots
         )
       )
       .sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0));
@@ -166,13 +168,15 @@ export class SessionRepository {
   public rehydrateSnapshot(snapshot: RepositorySnapshot): RepositorySnapshot {
     const currentRoots = workspaceRoots();
     const metadataById = this.metadataStore.getAll();
+    const knownWorkspaceRoots = collectKnownWorkspaceRoots(currentRoots, {}, snapshot.sessions);
     const sessions = snapshot.sessions
       .map((session) =>
         toSessionRecord(
           session,
           metadataForRawSession(session, metadataById),
           currentRoots,
-          session.workspaceAssigned ? session.workspaceRoot || session.cwd : ""
+          session.workspaceAssigned ? session.workspaceRoot || session.cwd : "",
+          knownWorkspaceRoots
         )
       )
       .sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0));

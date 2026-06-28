@@ -8,7 +8,7 @@ const PROJECT_LABEL_PREFIX = "\u00a0\u00a0";
 const ARCHIVE_LABEL_PREFIX = "\u00a0\u00a0\u00a0\u00a0";
 const SESSION_LABEL_PREFIX = "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0";
 
-export type TreeNode = GroupNode | ProjectNode | ProjectActiveNode | ProjectArchiveNode | SessionNode;
+export type TreeNode = GroupNode | ProjectNode | ProjectActiveNode | ProjectArchiveNode | GroupActiveNode | GroupArchiveNode | SessionNode;
 
 export class GroupNode {
   public constructor(public readonly group: SessionGroup) {}
@@ -26,8 +26,21 @@ export class ProjectArchiveNode {
   public constructor(public readonly group: SessionGroup, public readonly project: ProjectBucket, public readonly sessions: SessionRecord[]) {}
 }
 
+export class GroupActiveNode {
+  public constructor(public readonly group: SessionGroup, public readonly sessions: SessionRecord[]) {}
+}
+
+export class GroupArchiveNode {
+  public constructor(public readonly group: SessionGroup, public readonly sessions: SessionRecord[]) {}
+}
+
 export class SessionNode {
-  public constructor(public readonly group: SessionGroup, public readonly project: ProjectBucket, public readonly session: SessionRecord) {}
+  public constructor(
+    public readonly group: SessionGroup,
+    public readonly project: ProjectBucket,
+    public readonly session: SessionRecord,
+    public readonly labelPrefix = SESSION_LABEL_PREFIX
+  ) {}
 }
 
 export class SessionTreeProvider implements vscode.TreeDataProvider<TreeNode> {
@@ -54,7 +67,9 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<TreeNode> {
   public getTreeItem(element: TreeNode): vscode.TreeItem {
     if (element instanceof GroupNode) {
       const collapsibleState =
-        element.group.kind === "other" ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Expanded;
+        element.group.kind === "other" || element.group.kind === "noWorkspace"
+          ? vscode.TreeItemCollapsibleState.Collapsed
+          : vscode.TreeItemCollapsibleState.Expanded;
       const item = new vscode.TreeItem(element.group.label, collapsibleState);
       item.description = `${element.group.sessions.length}`;
       item.tooltip = element.group.description;
@@ -83,6 +98,15 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<TreeNode> {
       return item;
     }
 
+    if (element instanceof GroupActiveNode) {
+      const item = new vscode.TreeItem(`${PROJECT_LABEL_PREFIX}${t("activeSessionsGroupLabel")}`, vscode.TreeItemCollapsibleState.Expanded);
+      item.description = `${element.sessions.length}`;
+      item.tooltip = t("activeSessionsGroupDescription");
+      item.contextValue = "activeBucket";
+      item.iconPath = new vscode.ThemeIcon("comment-discussion");
+      return item;
+    }
+
     if (element instanceof ProjectArchiveNode) {
       const item = new vscode.TreeItem(`${ARCHIVE_LABEL_PREFIX}${t("archivedGroupLabel")}`, vscode.TreeItemCollapsibleState.Collapsed);
       item.description = `${element.sessions.length}`;
@@ -92,7 +116,16 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<TreeNode> {
       return item;
     }
 
-    const item = new vscode.TreeItem(`${SESSION_LABEL_PREFIX}${element.session.displayName}`, vscode.TreeItemCollapsibleState.None);
+    if (element instanceof GroupArchiveNode) {
+      const item = new vscode.TreeItem(`${PROJECT_LABEL_PREFIX}${t("archivedGroupLabel")}`, vscode.TreeItemCollapsibleState.Collapsed);
+      item.description = `${element.sessions.length}`;
+      item.tooltip = t("archivedGroupDescription");
+      item.contextValue = "archiveBucket";
+      item.iconPath = new vscode.ThemeIcon("archive", new vscode.ThemeColor("charts.orange"));
+      return item;
+    }
+
+    const item = new vscode.TreeItem(`${element.labelPrefix}${element.session.displayName}`, vscode.TreeItemCollapsibleState.None);
     const stateLabels = [
       element.session.archived ? t("archivedBadge") : "",
       element.session.local.pinned ? t("pinnedBadge") : "",
@@ -136,6 +169,18 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<TreeNode> {
     }
 
     if (element instanceof GroupNode) {
+      if (element.group.kind === "noWorkspace" || element.group.kind === "uncategorized") {
+        const active = element.group.sessions.filter((session) => !session.archived);
+        const archived = element.group.sessions.filter((session) => session.archived);
+        const children: TreeNode[] = [];
+        if (active.length > 0) {
+          children.push(new GroupActiveNode(element.group, active));
+        }
+        if (archived.length > 0) {
+          children.push(new GroupArchiveNode(element.group, archived));
+        }
+        return children;
+      }
       return projectBucketsForGroup(element.group).map((bucket) => new ProjectNode(element.group, bucket));
     }
 
@@ -158,6 +203,16 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<TreeNode> {
 
     if (element instanceof ProjectArchiveNode) {
       return element.sessions.map((session) => new SessionNode(element.group, element.project, session));
+    }
+
+    if (element instanceof GroupActiveNode || element instanceof GroupArchiveNode) {
+      const project: ProjectBucket = {
+        id: `${element.group.id}:direct`,
+        label: element.group.label,
+        description: element.group.description,
+        sessions: [...element.sessions]
+      };
+      return element.sessions.map((session) => new SessionNode(element.group, project, session, ARCHIVE_LABEL_PREFIX));
     }
 
     return [];
