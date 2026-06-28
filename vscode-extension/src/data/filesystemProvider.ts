@@ -316,6 +316,13 @@ export class CodexFilesystemProvider {
     return result;
   }
 
+  public getPinnedThreadIds(): Set<string> {
+    const globalState = readJsonFile<Record<string, unknown>>(path.join(this.codexHome, ".codex-global-state.json"), {});
+    const pinned = globalState["pinned-thread-ids"];
+    const values = Array.isArray(pinned) ? pinned : [pinned];
+    return new Set(values.filter((value): value is string => typeof value === "string" && value.trim().length > 0));
+  }
+
   public listSessions(): RawSessionRecord[] {
     const indexFile = path.join(this.codexHome, "session_index.jsonl");
     const sessionsDir = path.join(this.codexHome, "sessions");

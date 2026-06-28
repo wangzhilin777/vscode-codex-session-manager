@@ -96,6 +96,48 @@ test("filesystem provider loads indexed and archived sessions", () => {
   assert.equal(sessions[1]?.archived, true);
 });
 
+test("filesystem provider reads desktop pinned thread ids from global state", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-manager-"));
+  fs.writeFileSync(
+    path.join(root, ".codex-global-state.json"),
+    JSON.stringify({
+      "pinned-thread-ids": ["session-a", "session-b"]
+    }),
+    "utf8"
+  );
+
+  const provider = new CodexFilesystemProvider({
+    codexHome: root,
+    logger: makeLogger()
+  });
+
+  const pinned = provider.getPinnedThreadIds();
+
+  assert.equal(pinned.has("session-a"), true);
+  assert.equal(pinned.has("session-b"), true);
+  assert.equal(pinned.size, 2);
+});
+
+test("filesystem provider accepts a single desktop pinned thread id", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-manager-"));
+  fs.writeFileSync(
+    path.join(root, ".codex-global-state.json"),
+    JSON.stringify({
+      "pinned-thread-ids": "session-a"
+    }),
+    "utf8"
+  );
+
+  const provider = new CodexFilesystemProvider({
+    codexHome: root,
+    logger: makeLogger()
+  });
+
+  const pinned = provider.getPinnedThreadIds();
+
+  assert.deepEqual([...pinned], ["session-a"]);
+});
+
 test("filesystem provider includes rollout files even when metadata is incomplete", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-manager-"));
   const sessionsDir = path.join(root, "sessions", "2026", "06", "28");

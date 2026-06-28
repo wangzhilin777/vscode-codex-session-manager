@@ -55,6 +55,7 @@ export class SessionRepository {
     const currentRoots = workspaceRoots();
     const hints = this.filesystemProvider.getWorkspaceHints();
     const knownWorkspaceRoots = collectKnownWorkspaceRoots(currentRoots, hints);
+    const desktopPinnedThreadIds = this.filesystemProvider.getPinnedThreadIds();
     const metadataById = this.metadataStore.getAll();
     const cliAvailable = await this.cliService.checkAvailability();
 
@@ -114,15 +115,18 @@ export class SessionRepository {
     const archivedCount = rawDeduped.filter((raw) => raw.archived).length;
 
     const sessions = rawDeduped
-      .map((raw) =>
-        toSessionRecord(
+      .map((raw) => {
+        const localMetadata = metadataForRawSession(raw, metadataById);
+        const desktopPinned = desktopPinnedThreadIds.has(raw.sessionId) || desktopPinnedThreadIds.has(raw.id);
+        return toSessionRecord(
           raw,
-          metadataForRawSession(raw, metadataById),
+          localMetadata,
           currentRoots,
           resolveWorkspaceHint(raw.id, raw.cwd, hints),
-          knownWorkspaceRoots
-        )
-      )
+          knownWorkspaceRoots,
+          desktopPinned
+        );
+      })
       .sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0));
     this.logger.appendLine(
       [
@@ -169,16 +173,20 @@ export class SessionRepository {
     const currentRoots = workspaceRoots();
     const metadataById = this.metadataStore.getAll();
     const knownWorkspaceRoots = collectKnownWorkspaceRoots(currentRoots, {}, snapshot.sessions);
+    const desktopPinnedThreadIds = this.filesystemProvider.getPinnedThreadIds();
     const sessions = snapshot.sessions
-      .map((session) =>
-        toSessionRecord(
+      .map((session) => {
+        const localMetadata = metadataForRawSession(session, metadataById);
+        const desktopPinned = desktopPinnedThreadIds.has(session.sessionId) || desktopPinnedThreadIds.has(session.id);
+        return toSessionRecord(
           session,
-          metadataForRawSession(session, metadataById),
+          localMetadata,
           currentRoots,
           session.workspaceAssigned ? session.workspaceRoot || session.cwd : "",
-          knownWorkspaceRoots
-        )
-      )
+          knownWorkspaceRoots,
+          desktopPinned
+        );
+      })
       .sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0));
 
     return {

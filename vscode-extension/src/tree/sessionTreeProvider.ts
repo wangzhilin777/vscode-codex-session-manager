@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { SessionGroup, SessionRecord, ProjectBucket, RepositorySnapshot } from "../types";
 import { formatRelativeTime } from "../utils/time";
-import { projectBucketsForGroup } from "../data/sessionTransforms";
+import { isSessionPinned, projectBucketsForGroup } from "../data/sessionTransforms";
 import { t } from "../utils/i18n";
 
 const PROJECT_LABEL_PREFIX = "\u00a0\u00a0";
@@ -128,7 +128,7 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<TreeNode> {
     const item = new vscode.TreeItem(`${element.labelPrefix}${element.session.displayName}`, vscode.TreeItemCollapsibleState.None);
     const stateLabels = [
       element.session.archived ? t("archivedBadge") : "",
-      element.session.local.pinned ? t("pinnedBadge") : "",
+      isSessionPinned(element.session) ? t("pinnedBadge") : "",
       element.session.local.unread ? t("unreadBadge") : ""
     ].filter(Boolean);
     const statePrefix = stateLabels.length > 0 ? `${stateLabels.join(" · ")} · ` : "";
@@ -155,7 +155,7 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<TreeNode> {
     };
     item.iconPath = element.session.archived
       ? new vscode.ThemeIcon("archive", new vscode.ThemeColor("charts.orange"))
-      : element.session.local.pinned
+      : isSessionPinned(element.session)
         ? new vscode.ThemeIcon("pinned", new vscode.ThemeColor("charts.yellow"))
         : element.session.local.unread
           ? new vscode.ThemeIcon("circle-large-filled", new vscode.ThemeColor("charts.blue"))

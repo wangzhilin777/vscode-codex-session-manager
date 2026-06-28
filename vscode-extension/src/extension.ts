@@ -5,6 +5,7 @@ import path from "node:path";
 import { CodexCliService } from "./actions/codexCliService";
 import { EXTENSION_NAMESPACE, VIEW_ID } from "./constants";
 import { getCurrentSettings, SessionRepository } from "./data/sessionRepository";
+import { isSessionPinned } from "./data/sessionTransforms";
 import { MetadataStore } from "./storage/metadataStore";
 import { SessionSnapshotCache } from "./storage/sessionSnapshotCache";
 import { SessionNode, SessionTreeProvider } from "./tree/sessionTreeProvider";
@@ -560,7 +561,7 @@ class SessionManagerController {
   private toSearchQuickPickItem(session: SessionRecord): SearchSessionQuickPickItem {
     const stateLabels = [
       session.archived ? t("archivedBadge") : "",
-      session.local.pinned ? t("pinnedBadge") : "",
+      isSessionPinned(session) ? t("pinnedBadge") : "",
       session.local.unread ? t("unreadBadge") : ""
     ].filter(Boolean);
     const state = stateLabels.length > 0 ? ` · ${stateLabels.join(" · ")}` : "";

@@ -1,6 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildGroups, collectKnownWorkspaceRoots, dedupeRawSessions, filterSessions, projectBucketsForGroup, toSessionRecord } from "../data/sessionTransforms";
+import {
+  buildGroups,
+  collectKnownWorkspaceRoots,
+  dedupeRawSessions,
+  filterSessions,
+  isSessionPinned,
+  projectBucketsForGroup,
+  toSessionRecord
+} from "../data/sessionTransforms";
 import { RawSessionRecord } from "../types";
 import { configureLanguage } from "../utils/i18n";
 
@@ -314,6 +322,36 @@ test("buildGroups splits workspace-assigned sessions from no-workspace sessions"
   );
   assert.deepEqual(groups[0]?.sessions.map((session) => session.id), ["other-workspace"]);
   assert.deepEqual(groups[1]?.sessions.map((session) => session.id), ["no-workspace"]);
+});
+
+test("buildGroups sorts desktop pinned sessions without changing local pinned metadata", () => {
+  configureLanguage("en");
+  const regular = toSessionRecord(
+    {
+      ...makeRaw("regular", "E:\\Workspace\\VSCode\\test"),
+      updatedAt: 20
+    },
+    { alias: "", projectTag: "", note: "", pinned: false },
+    ["E:\\Workspace\\VSCode\\test"],
+    "E:\\Workspace\\VSCode\\test"
+  );
+  const desktopPinned = toSessionRecord(
+    {
+      ...makeRaw("desktop-pinned", "E:\\Workspace\\VSCode\\test"),
+      updatedAt: 10
+    },
+    { alias: "", projectTag: "", note: "", pinned: false },
+    ["E:\\Workspace\\VSCode\\test"],
+    "E:\\Workspace\\VSCode\\test",
+    ["E:\\Workspace\\VSCode\\test"],
+    true
+  );
+
+  const groups = buildGroups([regular, desktopPinned]);
+
+  assert.equal(desktopPinned.local.pinned, false);
+  assert.equal(isSessionPinned(desktopPinned), true);
+  assert.deepEqual(groups[0]?.sessions.map((session) => session.id), ["desktop-pinned", "regular"]);
 });
 
 test("projectBucketsForGroup merges archived sessions with the matching project bucket", () => {

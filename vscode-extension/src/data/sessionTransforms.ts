@@ -126,7 +126,8 @@ export function toSessionRecord(
   local: LocalSessionMetadata,
   workspaceRoots: readonly string[],
   workspaceHint: string,
-  knownWorkspaceRoots: readonly string[] = workspaceRoots
+  knownWorkspaceRoots: readonly string[] = workspaceRoots,
+  desktopPinned = false
 ): SessionRecord {
   const preferredRoot = pickLongestMatchingRoot(raw.cwd, workspaceRoots);
   const normalizedHint = normalizeFsPath(workspaceHint);
@@ -149,6 +150,7 @@ export function toSessionRecord(
     displayName,
     workspaceRoot: toDisplayPath(resolvedRoot),
     workspaceAssigned,
+    desktopPinned,
     projectKey,
     projectLabel,
     projectDescription,
@@ -181,7 +183,7 @@ export function filterSessions(sessions: readonly SessionRecord[], state: Sessio
       session.local.alias,
       session.local.projectTag,
       session.local.note,
-      session.local.pinned ? "pinned" : "",
+      isSessionPinned(session) ? "pinned" : "",
       session.local.unread ? "unread" : "",
       session.sessionId,
       session.cwd,
@@ -226,11 +228,17 @@ function sortBuckets(values: Iterable<ProjectBucket>): ProjectBucket[] {
 
 function sortSessions(sessions: SessionRecord[]): SessionRecord[] {
   return sessions.sort((left, right) => {
-    if (left.local.pinned !== right.local.pinned) {
-      return left.local.pinned ? -1 : 1;
+    const leftPinned = isSessionPinned(left);
+    const rightPinned = isSessionPinned(right);
+    if (leftPinned !== rightPinned) {
+      return leftPinned ? -1 : 1;
     }
     return (right.updatedAt ?? 0) - (left.updatedAt ?? 0);
   });
+}
+
+export function isSessionPinned(session: Pick<SessionRecord, "local" | "desktopPinned">): boolean {
+  return !!session.local.pinned || session.desktopPinned;
 }
 
 export function buildGroups(sessions: readonly SessionRecord[]): SessionGroup[] {
