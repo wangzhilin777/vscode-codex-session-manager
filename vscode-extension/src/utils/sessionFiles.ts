@@ -93,6 +93,30 @@ export function deleteSessionFile(session: SessionRecord, options: SessionFileOp
   return filePath;
 }
 
+export function archiveSessionFile(session: SessionRecord, options: SessionFileOperationOptions): boolean {
+  const codexHome = path.resolve(options.codexHome);
+  const sourcePath = findSessionFilePath(session, { codexHome });
+  if (!sourcePath || !isPathInside(sourcePath, sessionsRoot(codexHome))) {
+    return false;
+  }
+
+  const fileName = path.basename(sourcePath);
+  const targetDir = archivedRoot(codexHome);
+  const targetPath = path.resolve(targetDir, fileName);
+  if (!isPathInside(targetPath, targetDir)) {
+    return false;
+  }
+
+  fs.mkdirSync(targetDir, { recursive: true });
+  if (fs.existsSync(targetPath)) {
+    fs.rmSync(sourcePath, { force: true });
+    return true;
+  }
+
+  fs.renameSync(sourcePath, targetPath);
+  return true;
+}
+
 export function unarchiveSessionFile(session: SessionRecord, options: SessionFileOperationOptions): boolean {
   const codexHome = path.resolve(options.codexHome);
   const sourcePath = findSessionFilePath(session, { codexHome });

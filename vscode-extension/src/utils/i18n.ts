@@ -6,6 +6,7 @@ type MessageKey =
   | "archivedGroupDescription"
   | "archivedGroupLabel"
   | "archivedSourceLabel"
+  | "archiveFailed"
   | "allWorkspacesLabel"
   | "cachedSnapshotLabel"
   | "currentGroupDescription"
@@ -25,25 +26,41 @@ type MessageKey =
   | "inputSearchFilter"
   | "inlineAliasLabel"
   | "inlineArchiveLabel"
+  | "inlineArchiveTip"
+  | "inlineArchiveToggleTip"
   | "inlineCancelLabel"
+  | "inlineCancelTip"
   | "inlineClearLabel"
+  | "inlineClearTip"
   | "inlineDeleteLabel"
+  | "inlineDeleteTip"
+  | "inlineDeleteUnavailableTip"
   | "inlineDetailsLabel"
+  | "inlineDetailsTip"
   | "inlineEditingPrefix"
   | "inlineFilteredSummary"
   | "inlineHideArchivedLabel"
   | "inlineNoMatchesLabel"
   | "inlineNoteLabel"
+  | "inlineNoteTip"
   | "inlineOpenLabel"
+  | "inlineOpenTip"
   | "inlineProjectTagLabel"
+  | "inlineProjectTagTip"
   | "inlineRefreshLabel"
+  | "inlineRefreshTip"
   | "inlineRenameLabel"
+  | "inlineRenameTip"
   | "inlineResultSummary"
   | "inlineSaveLabel"
+  | "inlineSaveTip"
   | "inlineSearchInPanelLabel"
+  | "inlineSearchInputTip"
   | "inlineSearchTitle"
   | "inlineShowArchivedLabel"
+  | "inlineScopeTip"
   | "inlineUnarchiveLabel"
+  | "inlineUnarchiveTip"
   | "loadingSessionsForSearch"
   | "metadataSavedMessage"
   | "missingOfficial"
@@ -99,6 +116,7 @@ const en: Record<MessageKey, string> = {
   archivedGroupDescription: "Archived sessions",
   archivedGroupLabel: "Archived",
   archivedSourceLabel: "Archived",
+  archiveFailed: "Failed to archive session {sessionId}. The session file was not found under CODEX_HOME/sessions.",
   allWorkspacesLabel: "All Workspaces",
   cachedSnapshotLabel: "cached",
   currentGroupDescription: "Sessions matched to the current workspace",
@@ -118,25 +136,41 @@ const en: Record<MessageKey, string> = {
   inputSearchFilter: "Set a session search filter",
   inlineAliasLabel: "alias",
   inlineArchiveLabel: "Archive",
+  inlineArchiveTip: "Archive this session. If the Codex CLI is unavailable, the local session file will be moved safely.",
+  inlineArchiveToggleTip: "Show or hide archived sessions in this panel and the tree.",
   inlineCancelLabel: "Cancel",
+  inlineCancelTip: "Cancel editing and keep the current value.",
   inlineClearLabel: "Clear",
+  inlineClearTip: "Clear the search text.",
   inlineDeleteLabel: "Delete",
+  inlineDeleteTip: "Delete this archived session after confirmation. This removes the local Codex session file.",
+  inlineDeleteUnavailableTip: "Only archived sessions can be deleted. Archive this session first.",
   inlineDetailsLabel: "Details",
+  inlineDetailsTip: "Open the local read-only details page for this session.",
   inlineEditingPrefix: "Editing ",
   inlineFilteredSummary: "{visible} matched / {total} total",
   inlineHideArchivedLabel: "Hide Archived",
   inlineNoMatchesLabel: "No sessions match this search.",
   inlineNoteLabel: "note",
+  inlineNoteTip: "Edit the local note shown in this extension.",
   inlineOpenLabel: "Open",
+  inlineOpenTip: "Open this conversation in the official Codex panel.",
   inlineProjectTagLabel: "project tag",
+  inlineProjectTagTip: "Edit the local project tag used by this extension.",
   inlineRefreshLabel: "Refresh",
+  inlineRefreshTip: "Reload sessions from Codex data sources.",
   inlineRenameLabel: "Rename",
+  inlineRenameTip: "Set a local display alias for this session.",
   inlineResultSummary: "{visible} visible / {total} total",
   inlineSaveLabel: "Save",
+  inlineSaveTip: "Save this local edit.",
   inlineSearchInPanelLabel: "Search and edit sessions in this panel.",
+  inlineSearchInputTip: "Search by title, preview, note, path, project, or session ID.",
   inlineSearchTitle: "Search And Edit",
   inlineShowArchivedLabel: "Show Archived",
+  inlineScopeTip: "Switch between current workspace and all workspaces.",
   inlineUnarchiveLabel: "Unarchive",
+  inlineUnarchiveTip: "Unarchive this session after confirmation.",
   loadingSessionsForSearch: "No cache is available yet. Loading Codex sessions before search.",
   metadataSavedMessage: "Saved {label} for \"{title}\".",
   missingOfficial: "Official Codex VS Code extension was not detected. Opened the local details page instead.",
@@ -193,6 +227,7 @@ const zh: Record<MessageKey, string> = {
   archivedGroupDescription: "已归档的历史会话",
   archivedGroupLabel: "已归档",
   archivedSourceLabel: "归档",
+  archiveFailed: "归档会话 {sessionId} 失败：未在 CODEX_HOME/sessions 下找到对应会话文件。",
   allWorkspacesLabel: "全部工作区",
   cachedSnapshotLabel: "已缓存",
   currentGroupDescription: "当前工作区命中的会话",
@@ -212,25 +247,41 @@ const zh: Record<MessageKey, string> = {
   inputSearchFilter: "设置会话搜索过滤",
   inlineAliasLabel: "别名",
   inlineArchiveLabel: "归档",
+  inlineArchiveTip: "归档这个会话；如果 Codex CLI 不可用，会安全移动本地会话文件兜底。",
+  inlineArchiveToggleTip: "在面板和树中显示或隐藏归档会话。",
   inlineCancelLabel: "取消",
+  inlineCancelTip: "取消编辑，保留当前值。",
   inlineClearLabel: "清除",
+  inlineClearTip: "清空搜索内容。",
   inlineDeleteLabel: "删除",
+  inlineDeleteTip: "确认后删除这个已归档会话，会移除本地 Codex 会话文件。",
+  inlineDeleteUnavailableTip: "只有已归档会话可以删除，请先归档这个会话。",
   inlineDetailsLabel: "详情",
+  inlineDetailsTip: "打开这个会话的本地只读详情页。",
   inlineEditingPrefix: "正在编辑",
   inlineFilteredSummary: "命中 {visible} 条 / 共 {total} 条",
   inlineHideArchivedLabel: "隐藏归档",
   inlineNoMatchesLabel: "没有匹配的会话。",
   inlineNoteLabel: "备注",
+  inlineNoteTip: "编辑插件本地备注。",
   inlineOpenLabel: "打开",
+  inlineOpenTip: "在官方 Codex 面板中打开这个会话。",
   inlineProjectTagLabel: "项目标签",
+  inlineProjectTagTip: "编辑插件本地项目标签。",
   inlineRefreshLabel: "刷新",
+  inlineRefreshTip: "从 Codex 数据源重新加载会话。",
   inlineRenameLabel: "重命名",
+  inlineRenameTip: "设置这个会话在插件内显示的本地别名。",
   inlineResultSummary: "显示 {visible} 条 / 共 {total} 条",
   inlineSaveLabel: "保存",
+  inlineSaveTip: "保存这次本地编辑。",
   inlineSearchInPanelLabel: "可直接在这里搜索和编辑会话。",
+  inlineSearchInputTip: "可按标题、预览、备注、路径、项目或会话 ID 搜索。",
   inlineSearchTitle: "搜索与编辑",
   inlineShowArchivedLabel: "显示归档",
+  inlineScopeTip: "在本工作区和全部工作区之间切换。",
   inlineUnarchiveLabel: "取消归档",
+  inlineUnarchiveTip: "确认后取消归档这个会话。",
   loadingSessionsForSearch: "当前还没有缓存，正在先加载 Codex 会话再搜索。",
   metadataSavedMessage: "已保存“{title}”的{label}。",
   missingOfficial: "未检测到官方 Codex VS Code 插件，已回退到本地详情页。",

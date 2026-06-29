@@ -16,7 +16,7 @@ import {
 } from "./utils/officialCodex";
 import { configureLanguage, t } from "./utils/i18n";
 import { isPathInside, toDisplayPath } from "./utils/pathUtils";
-import { deleteSessionFile, unarchiveSessionFile } from "./utils/sessionFiles";
+import { archiveSessionFile, deleteSessionFile, unarchiveSessionFile } from "./utils/sessionFiles";
 import { SessionDetailsProvider } from "./view/sessionDetailsProvider";
 import { MetadataField, SessionInlineSearchProvider } from "./view/sessionInlineSearchProvider";
 
@@ -606,7 +606,7 @@ class SessionManagerController {
 
   private async archiveSessionRecord(session: SessionRecord): Promise<void> {
     await this.runSafe(async () => {
-      await this.cliService.archive(session);
+      await this.archiveSessionWithFallback(session);
       await this.refresh();
       await vscode.window.showInformationMessage(t("sessionArchivedMessage", { title: session.displayName }));
     });
@@ -719,6 +719,21 @@ class SessionManagerController {
       throw new Error(t("unarchiveFailed", { sessionId: session.sessionId }));
     }
     this.output.appendLine(`[extension] filesystem unarchive fallback moved ${session.sessionId}`);
+  }
+
+  private async archiveSessionWithFallback(session: SessionRecord): Promise<void> {
+    try {
+      await this.cliService.archive(session);
+      return;
+    } catch (error) {
+      this.output.appendLine(`[extension] cli archive failed, trying filesystem fallback: ${String(error)}`);
+    }
+
+    const moved = archiveSessionFile(session, { codexHome: this.getCodexHome() });
+    if (!moved) {
+      throw new Error(t("archiveFailed", { sessionId: session.sessionId }));
+    }
+    this.output.appendLine(`[extension] filesystem archive fallback moved ${session.sessionId}`);
   }
 
   private getCodexHome(): string {

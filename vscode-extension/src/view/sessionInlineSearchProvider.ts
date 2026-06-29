@@ -99,18 +99,33 @@ function labels(): Record<string, string> {
     allWorkspaces: t("allWorkspacesLabel"),
     showArchived: t("inlineShowArchivedLabel"),
     hideArchived: t("inlineHideArchivedLabel"),
+    scopeTip: t("inlineScopeTip"),
+    archiveToggleTip: t("inlineArchiveToggleTip"),
     clear: t("inlineClearLabel"),
+    clearTip: t("inlineClearTip"),
     refresh: t("inlineRefreshLabel"),
+    refreshTip: t("inlineRefreshTip"),
     open: t("inlineOpenLabel"),
+    openTip: t("inlineOpenTip"),
     details: t("inlineDetailsLabel"),
+    detailsTip: t("inlineDetailsTip"),
     archive: t("inlineArchiveLabel"),
+    archiveTip: t("inlineArchiveTip"),
     unarchive: t("inlineUnarchiveLabel"),
+    unarchiveTip: t("inlineUnarchiveTip"),
     delete: t("inlineDeleteLabel"),
+    deleteTip: t("inlineDeleteTip"),
+    deleteUnavailableTip: t("inlineDeleteUnavailableTip"),
     rename: t("inlineRenameLabel"),
+    renameTip: t("inlineRenameTip"),
     projectTag: t("inlineProjectTagLabel"),
+    projectTagTip: t("inlineProjectTagTip"),
     note: t("inlineNoteLabel"),
+    noteTip: t("inlineNoteTip"),
     save: t("inlineSaveLabel"),
+    saveTip: t("inlineSaveTip"),
     cancel: t("inlineCancelLabel"),
+    cancelTip: t("inlineCancelTip"),
     noSessions: t("noSessionsAvailable"),
     noMatches: t("inlineNoMatchesLabel"),
     resultSummary: t("inlineResultSummary"),
@@ -119,7 +134,8 @@ function labels(): Record<string, string> {
     pinned: t("pinnedBadge"),
     unread: t("unreadBadge"),
     editingPrefix: t("inlineEditingPrefix"),
-    searchInPanel: t("inlineSearchInPanelLabel")
+    searchInPanel: t("inlineSearchInPanelLabel"),
+    searchInputTip: t("inlineSearchInputTip")
   };
 }
 
@@ -321,6 +337,10 @@ export class SessionInlineSearchProvider implements vscode.WebviewViewProvider {
     button:hover {
       background: var(--vscode-button-secondaryHoverBackground);
     }
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
     button.primary {
       color: var(--vscode-button-foreground);
       background: var(--vscode-button-background);
@@ -470,6 +490,11 @@ export class SessionInlineSearchProvider implements vscode.WebviewViewProvider {
       node.textContent = value || '';
     }
 
+    function describeControl(node, value) {
+      node.title = value || '';
+      node.setAttribute('aria-label', value || '');
+    }
+
     function metadataValue(session, field) {
       if (field === 'alias') {
         return session.alias || '';
@@ -512,12 +537,14 @@ export class SessionInlineSearchProvider implements vscode.WebviewViewProvider {
       save.type = 'button';
       save.className = 'primary';
       save.textContent = label('save');
+      describeControl(save, label('saveTip'));
       save.addEventListener('click', () => {
         post('saveMetadata', { sessionId: session.sessionId, field, value: editor.value });
       });
       const cancel = document.createElement('button');
       cancel.type = 'button';
       cancel.textContent = label('cancel');
+      describeControl(cancel, label('cancelTip'));
       cancel.addEventListener('click', () => post('cancelEdit'));
       actions.append(save, cancel);
       box.appendChild(actions);
@@ -587,35 +614,44 @@ export class SessionInlineSearchProvider implements vscode.WebviewViewProvider {
       open.type = 'button';
       open.className = 'primary';
       open.textContent = label('open');
+      describeControl(open, label('openTip'));
       open.addEventListener('click', () => post('openOfficial', { sessionId: session.sessionId }));
       const details = document.createElement('button');
       details.type = 'button';
       details.textContent = label('details');
+      describeControl(details, label('detailsTip'));
       details.addEventListener('click', () => post('openDetails', { sessionId: session.sessionId }));
       const rename = document.createElement('button');
       rename.type = 'button';
       rename.textContent = label('rename');
+      describeControl(rename, label('renameTip'));
       rename.addEventListener('click', () => post('beginEdit', { sessionId: session.sessionId, field: 'alias' }));
       const projectTag = document.createElement('button');
       projectTag.type = 'button';
       projectTag.textContent = label('projectTag');
+      describeControl(projectTag, label('projectTagTip'));
       projectTag.addEventListener('click', () => post('beginEdit', { sessionId: session.sessionId, field: 'projectTag' }));
       const note = document.createElement('button');
       note.type = 'button';
       note.textContent = label('note');
+      describeControl(note, label('noteTip'));
       note.addEventListener('click', () => post('beginEdit', { sessionId: session.sessionId, field: 'note' }));
       const archive = document.createElement('button');
       archive.type = 'button';
       archive.textContent = session.archived ? label('unarchive') : label('archive');
+      describeControl(archive, session.archived ? label('unarchiveTip') : label('archiveTip'));
       archive.addEventListener('click', () => post('toggleArchive', { sessionId: session.sessionId }));
-      actions.append(open, details, rename, projectTag, note, archive);
+      const deleteButton = document.createElement('button');
+      deleteButton.type = 'button';
+      deleteButton.textContent = label('delete');
+      describeControl(deleteButton, session.archived ? label('deleteTip') : label('deleteUnavailableTip'));
       if (session.archived) {
-        const deleteButton = document.createElement('button');
-        deleteButton.type = 'button';
-        deleteButton.textContent = label('delete');
         deleteButton.addEventListener('click', () => post('deleteSession', { sessionId: session.sessionId }));
-        actions.appendChild(deleteButton);
+      } else {
+        deleteButton.disabled = true;
+        deleteButton.setAttribute('aria-disabled', 'true');
       }
+      actions.append(open, details, rename, projectTag, note, archive, deleteButton);
       card.appendChild(actions);
 
       if (state?.editing?.sessionId === session.sessionId) {
@@ -629,13 +665,18 @@ export class SessionInlineSearchProvider implements vscode.WebviewViewProvider {
       state = nextState;
       suppressSearchEvent = true;
       searchInput.placeholder = label('placeholder');
+      describeControl(searchInput, label('searchInputTip'));
       searchInput.value = state.filter.searchTerm || '';
       suppressSearchEvent = false;
 
       scopeButton.textContent = state.filter.currentProjectOnly ? label('currentWorkspace') : label('allWorkspaces');
+      describeControl(scopeButton, label('scopeTip'));
       archiveButton.textContent = state.filter.showArchived ? label('hideArchived') : label('showArchived');
+      describeControl(archiveButton, label('archiveToggleTip'));
       clearButton.textContent = label('clear');
+      describeControl(clearButton, label('clearTip'));
       refreshButton.textContent = label('refresh');
+      describeControl(refreshButton, label('refreshTip'));
       status.textContent = state.viewMessage || label('searchInPanel');
 
       const resultText = (state.filter.searchTerm ? label('filteredSummary') : label('resultSummary'))

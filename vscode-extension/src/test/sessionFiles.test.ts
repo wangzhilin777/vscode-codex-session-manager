@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { deleteSessionFile, unarchiveSessionFile } from "../utils/sessionFiles";
+import { archiveSessionFile, deleteSessionFile, unarchiveSessionFile } from "../utils/sessionFiles";
 import { SessionRecord } from "../types";
 
 function makeSession(patch: Partial<SessionRecord>): SessionRecord {
@@ -66,6 +66,38 @@ test("deleteSessionFile refuses paths outside CODEX_HOME", () => {
 
   assert.equal(deleted, "");
   assert.equal(fs.existsSync(outsidePath), true);
+});
+
+test("archiveSessionFile moves rollout files into archived_sessions", () => {
+  const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-files-"));
+  const sessionsDir = path.join(codexHome, "sessions", "2026", "06", "28");
+  fs.mkdirSync(sessionsDir, { recursive: true });
+
+  const fileName = "rollout-2026-06-28T22-48-17-019f098d-7192-7333-8d97-e3d56ba6b50b.jsonl";
+  const sessionPath = path.join(sessionsDir, fileName);
+  fs.writeFileSync(sessionPath, "{}\n", "utf8");
+
+  const moved = archiveSessionFile(makeSession({ path: sessionPath, archived: false }), { codexHome });
+  const archivedPath = path.join(codexHome, "archived_sessions", fileName);
+
+  assert.equal(moved, true);
+  assert.equal(fs.existsSync(sessionPath), false);
+  assert.equal(fs.existsSync(archivedPath), true);
+});
+
+test("archiveSessionFile refuses files already outside sessions root", () => {
+  const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-files-"));
+  const archivedDir = path.join(codexHome, "archived_sessions");
+  fs.mkdirSync(archivedDir, { recursive: true });
+
+  const fileName = "rollout-2026-06-28T22-48-17-019f098d-7192-7333-8d97-e3d56ba6b50b.jsonl";
+  const archivedPath = path.join(archivedDir, fileName);
+  fs.writeFileSync(archivedPath, "{}\n", "utf8");
+
+  const moved = archiveSessionFile(makeSession({ path: archivedPath, archived: true }), { codexHome });
+
+  assert.equal(moved, false);
+  assert.equal(fs.existsSync(archivedPath), true);
 });
 
 test("unarchiveSessionFile moves rollout files back under dated sessions folder", () => {
