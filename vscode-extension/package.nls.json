@@ -34,7 +34,7 @@
   "command.revealSessionFile.title": "Codex Sessions: Reveal Session File",
   "configuration.title": "Codex Sessions",
   "configuration.dataSourceMode.description": "Choose how sessions are loaded.",
-  "configuration.currentProjectOnlyDefault.description": "Show only current-workspace sessions when the view first loads. Disabled by default so every known workspace is visible.",
+  "configuration.currentProjectOnlyDefault.description": "Show only current-workspace sessions when the view first loads. Enabled by default to keep the sidebar focused on the active project.",
   "configuration.showArchivedDefault.description": "Show archived sessions by default so archived conversations remain visible with an Archived badge.",
   "configuration.includeExecSessions.description": "Include exec-originated sessions.",
   "configuration.includeSubagentSessions.description": "Include sub-agent sessions in the tree.",

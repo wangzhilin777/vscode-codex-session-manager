@@ -34,7 +34,7 @@
   "command.revealSessionFile.title": "Codex 会话：定位会话文件",
   "configuration.title": "Codex 会话",
   "configuration.dataSourceMode.description": "选择会话加载方式。",
-  "configuration.currentProjectOnlyDefault.description": "首次加载视图时只显示本工作区会话。默认关闭，以便直接看到所有已知工作区。",
+  "configuration.currentProjectOnlyDefault.description": "首次加载视图时只显示本工作区会话。默认开启，让侧栏优先聚焦当前项目。",
   "configuration.showArchivedDefault.description": "默认显示归档会话，并保留已归档标识，避免归档后从列表中消失。",
   "configuration.includeExecSessions.description": "包含 exec 来源的会话。",
   "configuration.includeSubagentSessions.description": "在树中包含子代理会话。",

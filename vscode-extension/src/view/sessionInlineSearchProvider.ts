@@ -15,6 +15,8 @@ interface InlineSearchCallbacks {
   onRefresh(): Promise<void>;
   onOpenOfficial(sessionId: string): Promise<void>;
   onOpenDetails(sessionId: string): Promise<void>;
+  onToggleArchive(sessionId: string): Promise<void>;
+  onDeleteSession(sessionId: string): Promise<void>;
   onSaveMetadata(sessionId: string, field: MetadataField, value: string): Promise<void>;
 }
 
@@ -54,6 +56,8 @@ type WebviewMessage =
   | { type: "refresh" }
   | { type: "openOfficial"; sessionId?: unknown }
   | { type: "openDetails"; sessionId?: unknown }
+  | { type: "toggleArchive"; sessionId?: unknown }
+  | { type: "deleteSession"; sessionId?: unknown }
   | { type: "beginEdit"; sessionId?: unknown; field?: unknown }
   | { type: "cancelEdit" }
   | { type: "saveMetadata"; sessionId?: unknown; field?: unknown; value?: unknown };
@@ -99,6 +103,9 @@ function labels(): Record<string, string> {
     refresh: t("inlineRefreshLabel"),
     open: t("inlineOpenLabel"),
     details: t("inlineDetailsLabel"),
+    archive: t("inlineArchiveLabel"),
+    unarchive: t("inlineUnarchiveLabel"),
+    delete: t("inlineDeleteLabel"),
     rename: t("inlineRenameLabel"),
     projectTag: t("inlineProjectTagLabel"),
     note: t("inlineNoteLabel"),
@@ -188,6 +195,16 @@ export class SessionInlineSearchProvider implements vscode.WebviewViewProvider {
       case "openDetails":
         if (typeof message.sessionId === "string") {
           await this.callbacks.onOpenDetails(message.sessionId);
+        }
+        return;
+      case "toggleArchive":
+        if (typeof message.sessionId === "string") {
+          await this.callbacks.onToggleArchive(message.sessionId);
+        }
+        return;
+      case "deleteSession":
+        if (typeof message.sessionId === "string") {
+          await this.callbacks.onDeleteSession(message.sessionId);
         }
         return;
       case "beginEdit": {
@@ -587,7 +604,18 @@ export class SessionInlineSearchProvider implements vscode.WebviewViewProvider {
       note.type = 'button';
       note.textContent = label('note');
       note.addEventListener('click', () => post('beginEdit', { sessionId: session.sessionId, field: 'note' }));
-      actions.append(open, details, rename, projectTag, note);
+      const archive = document.createElement('button');
+      archive.type = 'button';
+      archive.textContent = session.archived ? label('unarchive') : label('archive');
+      archive.addEventListener('click', () => post('toggleArchive', { sessionId: session.sessionId }));
+      actions.append(open, details, rename, projectTag, note, archive);
+      if (session.archived) {
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.textContent = label('delete');
+        deleteButton.addEventListener('click', () => post('deleteSession', { sessionId: session.sessionId }));
+        actions.appendChild(deleteButton);
+      }
       card.appendChild(actions);
 
       if (state?.editing?.sessionId === session.sessionId) {

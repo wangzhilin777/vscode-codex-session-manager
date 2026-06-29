@@ -91,6 +91,12 @@ class SessionManagerController {
       onOpenDetails: async (sessionId) => {
         await this.openSessionById(sessionId, "details");
       },
+      onToggleArchive: async (sessionId) => {
+        await this.toggleArchiveById(sessionId);
+      },
+      onDeleteSession: async (sessionId) => {
+        await this.deleteSessionById(sessionId);
+      },
       onSaveMetadata: async (sessionId, field, value) => {
         await this.saveMetadataById(sessionId, field, value);
       }
@@ -222,57 +228,21 @@ class SessionManagerController {
         if (!session) {
           return;
         }
-        await this.runSafe(async () => {
-          await this.cliService.archive(session);
-          await this.refresh();
-          await vscode.window.showInformationMessage(t("sessionArchivedMessage", { title: session.displayName }));
-        });
+        await this.archiveSessionRecord(session);
       }),
       vscode.commands.registerCommand("codexSessions.unarchiveSession", async (node?: SessionNode) => {
         const session = this.pickSession(node);
         if (!session) {
           return;
         }
-        const confirmed = await this.confirmSessionAction(
-          t("unarchiveSessionConfirmMessage", { title: session.displayName }),
-          t("unarchiveSessionConfirmButton")
-        );
-        if (!confirmed) {
-          return;
-        }
-        await this.runSafe(async () => {
-          await this.unarchiveSessionWithFallback(session);
-          await this.refresh();
-          await vscode.window.showInformationMessage(t("sessionUnarchivedMessage", { title: session.displayName }));
-        });
+        await this.unarchiveSessionRecordWithConfirm(session);
       }),
       vscode.commands.registerCommand("codexSessions.deleteSession", async (node?: SessionNode) => {
         const session = this.pickSession(node);
         if (!session) {
           return;
         }
-        if (!session.archived) {
-          await vscode.window.showWarningMessage(t("deleteOnlyArchived"));
-          return;
-        }
-        const confirmed = await this.confirmSessionAction(
-          t("deleteSessionConfirmMessage", { title: session.displayName }),
-          t("deleteSessionConfirmButton"),
-          t("deleteSessionConfirmDetail")
-        );
-        if (!confirmed) {
-          return;
-        }
-        await this.runSafe(async () => {
-          const deletedPath = deleteSessionFile(session, { codexHome: this.getCodexHome() });
-          if (!deletedPath) {
-            throw new Error(t("deleteSessionFailed", { sessionId: session.sessionId }));
-          }
-          this.output.appendLine(`[extension] deleted archived session ${session.sessionId}: ${deletedPath}`);
-          await this.metadataStore.delete(this.metadataKeyFor(session));
-          await this.refresh();
-          await vscode.window.showInformationMessage(t("deleteSessionSucceeded", { title: session.displayName }));
-        });
+        await this.deleteSessionRecordWithConfirm(session);
       }),
       vscode.commands.registerCommand("codexSessions.copySessionId", async (node?: SessionNode) => {
         const session = this.pickSession(node);
@@ -582,6 +552,28 @@ class SessionManagerController {
     await this.openPrimarySessionTarget(session);
   }
 
+  private async toggleArchiveById(sessionId: string): Promise<void> {
+    const session = this.findSessionById(sessionId);
+    if (!session) {
+      await vscode.window.showWarningMessage(t("sessionNotFoundMessage", { sessionId }));
+      return;
+    }
+    if (session.archived) {
+      await this.unarchiveSessionRecordWithConfirm(session);
+      return;
+    }
+    await this.archiveSessionRecord(session);
+  }
+
+  private async deleteSessionById(sessionId: string): Promise<void> {
+    const session = this.findSessionById(sessionId);
+    if (!session) {
+      await vscode.window.showWarningMessage(t("sessionNotFoundMessage", { sessionId }));
+      return;
+    }
+    await this.deleteSessionRecordWithConfirm(session);
+  }
+
   private async saveMetadataById(sessionId: string, field: MetadataField, value: string): Promise<void> {
     const session = this.findSessionById(sessionId);
     if (!session) {
@@ -610,6 +602,54 @@ class SessionManagerController {
       case "note":
         return t("inlineNoteLabel");
     }
+  }
+
+  private async archiveSessionRecord(session: SessionRecord): Promise<void> {
+    await this.runSafe(async () => {
+      await this.cliService.archive(session);
+      await this.refresh();
+      await vscode.window.showInformationMessage(t("sessionArchivedMessage", { title: session.displayName }));
+    });
+  }
+
+  private async unarchiveSessionRecordWithConfirm(session: SessionRecord): Promise<void> {
+    const confirmed = await this.confirmSessionAction(
+      t("unarchiveSessionConfirmMessage", { title: session.displayName }),
+      t("unarchiveSessionConfirmButton")
+    );
+    if (!confirmed) {
+      return;
+    }
+    await this.runSafe(async () => {
+      await this.unarchiveSessionWithFallback(session);
+      await this.refresh();
+      await vscode.window.showInformationMessage(t("sessionUnarchivedMessage", { title: session.displayName }));
+    });
+  }
+
+  private async deleteSessionRecordWithConfirm(session: SessionRecord): Promise<void> {
+    if (!session.archived) {
+      await vscode.window.showWarningMessage(t("deleteOnlyArchived"));
+      return;
+    }
+    const confirmed = await this.confirmSessionAction(
+      t("deleteSessionConfirmMessage", { title: session.displayName }),
+      t("deleteSessionConfirmButton"),
+      t("deleteSessionConfirmDetail")
+    );
+    if (!confirmed) {
+      return;
+    }
+    await this.runSafe(async () => {
+      const deletedPath = deleteSessionFile(session, { codexHome: this.getCodexHome() });
+      if (!deletedPath) {
+        throw new Error(t("deleteSessionFailed", { sessionId: session.sessionId }));
+      }
+      this.output.appendLine(`[extension] deleted archived session ${session.sessionId}: ${deletedPath}`);
+      await this.metadataStore.delete(this.metadataKeyFor(session));
+      await this.refresh();
+      await vscode.window.showInformationMessage(t("deleteSessionSucceeded", { title: session.displayName }));
+    });
   }
 
   private async openPrimarySessionTarget(session: SessionRecord): Promise<void> {

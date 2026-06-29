@@ -2,7 +2,7 @@
   "name": "vscode-codex-session-manager",
   "displayName": "Codex 会话管理 / Codex Session Manager",
   "description": "按项目管理 VS Code Codex 会话，并可跳转官方 Codex 继续对话。 Project-aware Codex sessions for VS Code with official Codex handoff.",
-  "version": "0.1.27",
+  "version": "0.1.28",
   "publisher": "wangzhilin777",
   "license": "MIT",
   "icon": "resources/codex-sessions.png",
@@ -73,13 +73,13 @@
     "views": {
       "codexSessions": [
         {
+          "id": "codexSessions.tree",
+          "name": "%view.codexSessions.tree.name%"
+        },
+        {
           "id": "codexSessions.inlineSearch",
           "name": "%view.codexSessions.inlineSearch.name%",
           "type": "webview"
-        },
-        {
-          "id": "codexSessions.tree",
-          "name": "%view.codexSessions.tree.name%"
         }
       ]
     },
@@ -420,7 +420,7 @@
         },
         "codexSessionManager.currentProjectOnlyDefault": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "%configuration.currentProjectOnlyDefault.description%"
         },
         "codexSessionManager.showArchivedDefault": {

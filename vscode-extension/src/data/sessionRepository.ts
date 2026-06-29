@@ -270,7 +270,7 @@ export function getCurrentSettings(): ExtensionSettings {
   const config = vscode.workspace.getConfiguration("codexSessionManager");
   return {
     dataSourceMode: config.get<ExtensionSettings["dataSourceMode"]>("dataSourceMode", "auto"),
-    currentProjectOnlyDefault: config.get<boolean>("currentProjectOnlyDefault", false),
+    currentProjectOnlyDefault: config.get<boolean>("currentProjectOnlyDefault", true),
     showArchivedDefault: config.get<boolean>("showArchivedDefault", true),
     includeExecSessions: config.get<boolean>("includeExecSessions", true),
     includeSubagentSessions: config.get<boolean>("includeSubagentSessions", false),

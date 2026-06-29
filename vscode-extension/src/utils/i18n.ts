@@ -24,8 +24,10 @@ type MessageKey =
   | "forkStarted"
   | "inputSearchFilter"
   | "inlineAliasLabel"
+  | "inlineArchiveLabel"
   | "inlineCancelLabel"
   | "inlineClearLabel"
+  | "inlineDeleteLabel"
   | "inlineDetailsLabel"
   | "inlineEditingPrefix"
   | "inlineFilteredSummary"
@@ -41,6 +43,7 @@ type MessageKey =
   | "inlineSearchInPanelLabel"
   | "inlineSearchTitle"
   | "inlineShowArchivedLabel"
+  | "inlineUnarchiveLabel"
   | "loadingSessionsForSearch"
   | "metadataSavedMessage"
   | "missingOfficial"
@@ -114,8 +117,10 @@ const en: Record<MessageKey, string> = {
   forkStarted: "Started Codex fork in the terminal.",
   inputSearchFilter: "Set a session search filter",
   inlineAliasLabel: "alias",
+  inlineArchiveLabel: "Archive",
   inlineCancelLabel: "Cancel",
   inlineClearLabel: "Clear",
+  inlineDeleteLabel: "Delete",
   inlineDetailsLabel: "Details",
   inlineEditingPrefix: "Editing ",
   inlineFilteredSummary: "{visible} matched / {total} total",
@@ -131,6 +136,7 @@ const en: Record<MessageKey, string> = {
   inlineSearchInPanelLabel: "Search and edit sessions in this panel.",
   inlineSearchTitle: "Search And Edit",
   inlineShowArchivedLabel: "Show Archived",
+  inlineUnarchiveLabel: "Unarchive",
   loadingSessionsForSearch: "No cache is available yet. Loading Codex sessions before search.",
   metadataSavedMessage: "Saved {label} for \"{title}\".",
   missingOfficial: "Official Codex VS Code extension was not detected. Opened the local details page instead.",
@@ -205,8 +211,10 @@ const zh: Record<MessageKey, string> = {
   forkStarted: "已在终端启动 Codex 派生。",
   inputSearchFilter: "设置会话搜索过滤",
   inlineAliasLabel: "别名",
+  inlineArchiveLabel: "归档",
   inlineCancelLabel: "取消",
   inlineClearLabel: "清除",
+  inlineDeleteLabel: "删除",
   inlineDetailsLabel: "详情",
   inlineEditingPrefix: "正在编辑",
   inlineFilteredSummary: "命中 {visible} 条 / 共 {total} 条",
@@ -222,6 +230,7 @@ const zh: Record<MessageKey, string> = {
   inlineSearchInPanelLabel: "可直接在这里搜索和编辑会话。",
   inlineSearchTitle: "搜索与编辑",
   inlineShowArchivedLabel: "显示归档",
+  inlineUnarchiveLabel: "取消归档",
   loadingSessionsForSearch: "当前还没有缓存，正在先加载 Codex 会话再搜索。",
   metadataSavedMessage: "已保存“{title}”的{label}。",
   missingOfficial: "未检测到官方 Codex VS Code 插件，已回退到本地详情页。",
