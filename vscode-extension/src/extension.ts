@@ -3,9 +3,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { CodexCliService } from "./actions/codexCliService";
-import { EXTENSION_NAMESPACE, VIEW_ID } from "./constants";
+import { EXTENSION_NAMESPACE, INLINE_SEARCH_VIEW_ID, VIEW_ID } from "./constants";
 import { getCurrentSettings, SessionRepository } from "./data/sessionRepository";
-import { isSessionPinned } from "./data/sessionTransforms";
 import { MetadataStore } from "./storage/metadataStore";
 import { SessionSnapshotCache } from "./storage/sessionSnapshotCache";
 import { SessionNode, SessionTreeProvider } from "./tree/sessionTreeProvider";
@@ -19,6 +18,7 @@ import { configureLanguage, t } from "./utils/i18n";
 import { isPathInside, toDisplayPath } from "./utils/pathUtils";
 import { deleteSessionFile, unarchiveSessionFile } from "./utils/sessionFiles";
 import { SessionDetailsProvider } from "./view/sessionDetailsProvider";
+import { MetadataField, SessionInlineSearchProvider } from "./view/sessionInlineSearchProvider";
 
 const PENDING_OPEN_AFTER_WORKSPACE_SWITCH_KEY = "pendingOpenAfterWorkspaceSwitch";
 const PENDING_OPEN_MAX_AGE_MS = 2 * 60 * 1000;
@@ -29,10 +29,6 @@ interface PendingOpenAfterWorkspaceSwitch {
   sessionId: string;
   workspacePath: string;
   createdAt: number;
-}
-
-interface SearchSessionQuickPickItem extends vscode.QuickPickItem {
-  session: SessionRecord;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -50,6 +46,7 @@ class SessionManagerController {
   private readonly cliService: CodexCliService;
   private readonly repository: SessionRepository;
   private readonly treeProvider = new SessionTreeProvider();
+  private readonly inlineSearchProvider: SessionInlineSearchProvider;
   private readonly detailsProvider: SessionDetailsProvider;
   private readonly treeView: vscode.TreeView<SessionNode | unknown>;
   private refreshTimer: NodeJS.Timeout | null = null;
@@ -68,6 +65,36 @@ class SessionManagerController {
     this.cliService = new CodexCliService(this.settings, this.output);
     this.repository = new SessionRepository(this.settings, this.metadataStore, this.cliService, this.output);
     this.detailsProvider = new SessionDetailsProvider(this.repository, () => this.settings);
+    this.inlineSearchProvider = new SessionInlineSearchProvider({
+      onSearchChanged: async (value) => {
+        this.state.searchTerm = value.trim();
+        await this.renderCurrentSnapshotOrRefresh();
+      },
+      onToggleCurrentProjectOnly: async () => {
+        this.state.currentProjectOnly = !this.state.currentProjectOnly;
+        await this.renderCurrentSnapshotOrRefresh();
+      },
+      onToggleArchived: async () => {
+        this.state.showArchived = !this.state.showArchived;
+        await this.renderCurrentSnapshotOrRefresh();
+      },
+      onClearSearch: async () => {
+        this.state.searchTerm = "";
+        await this.renderCurrentSnapshotOrRefresh();
+      },
+      onRefresh: async () => {
+        await this.refresh();
+      },
+      onOpenOfficial: async (sessionId) => {
+        await this.openSessionById(sessionId, "official");
+      },
+      onOpenDetails: async (sessionId) => {
+        await this.openSessionById(sessionId, "details");
+      },
+      onSaveMetadata: async (sessionId, field, value) => {
+        await this.saveMetadataById(sessionId, field, value);
+      }
+    });
     this.treeView = vscode.window.createTreeView(VIEW_ID, {
       treeDataProvider: this.treeProvider,
       showCollapseAll: true
@@ -80,6 +107,11 @@ class SessionManagerController {
       this.treeView,
       this.repository,
       vscode.workspace.registerTextDocumentContentProvider("codex-session", this.detailsProvider),
+      vscode.window.registerWebviewViewProvider(INLINE_SEARCH_VIEW_ID, this.inlineSearchProvider, {
+        webviewOptions: {
+          retainContextWhenHidden: true
+        }
+      }),
       vscode.commands.registerCommand("codexSessions.refresh", async () => {
         await this.refresh();
       }),
@@ -102,21 +134,14 @@ class SessionManagerController {
         await this.renderCurrentSnapshotOrRefresh();
       }),
       vscode.commands.registerCommand("codexSessions.setSearchFilter", async () => {
-        const value = await vscode.window.showInputBox({
-          prompt: t("inputSearchFilter"),
-          value: this.state.searchTerm
-        });
-        if (value !== undefined) {
-          this.state.searchTerm = value.trim();
-          await this.renderCurrentSnapshotOrRefresh();
-        }
+        await this.focusInlineSearch();
       }),
       vscode.commands.registerCommand("codexSessions.clearSearchFilter", async () => {
         this.state.searchTerm = "";
         await this.renderCurrentSnapshotOrRefresh();
       }),
       vscode.commands.registerCommand("codexSessions.searchAndOpenSession", async () => {
-        await this.searchAndOpenSession();
+        await this.focusInlineSearch();
       }),
       vscode.commands.registerCommand("codexSessions.openInOfficialCodex", async (node?: SessionNode) => {
         const session = this.pickSession(node);
@@ -133,13 +158,13 @@ class SessionManagerController {
         await this.detailsProvider.open(session);
       }),
       vscode.commands.registerCommand("codexSessions.setAlias", async (node?: SessionNode) => {
-        await this.editMetadata(node, "alias", "Set local alias", "alias");
+        await this.editMetadata(node, "alias");
       }),
       vscode.commands.registerCommand("codexSessions.setProjectTag", async (node?: SessionNode) => {
-        await this.editMetadata(node, "projectTag", "Set local project tag", "project tag");
+        await this.editMetadata(node, "projectTag");
       }),
       vscode.commands.registerCommand("codexSessions.setNote", async (node?: SessionNode) => {
-        await this.editMetadata(node, "note", "Set local note", "note");
+        await this.editMetadata(node, "note");
       }),
       vscode.commands.registerCommand("codexSessions.resumeInTerminal", async (node?: SessionNode) => {
         const session = this.pickSession(node);
@@ -449,6 +474,12 @@ class SessionManagerController {
     const groups = this.repository.buildGroups(visibleSnapshot);
     this.treeProvider.setSnapshot(visibleSnapshot, groups);
     this.treeView.message = this.buildViewMessage(visibleSnapshot, cached);
+    this.inlineSearchProvider.setSnapshot(
+      visibleSnapshot,
+      { ...this.state },
+      this.treeView.message ?? "",
+      this.fullSnapshot?.sessions.length ?? visibleSnapshot.sessions.length
+    );
     await vscode.commands.executeCommand("setContext", "codexSessions.currentProjectOnly", this.state.currentProjectOnly);
     await vscode.commands.executeCommand("setContext", "codexSessions.showArchived", this.state.showArchived);
   }
@@ -495,22 +526,66 @@ class SessionManagerController {
     return null;
   }
 
-  private async editMetadata(
-    node: SessionNode | undefined,
-    field: "alias" | "projectTag" | "note",
-    prompt: string,
-    placeHolder: string
-  ): Promise<void> {
+  private async editMetadata(node: SessionNode | undefined, field: MetadataField): Promise<void> {
     const session = this.pickSession(node);
     if (!session) {
       return;
     }
-    const value = await vscode.window.showInputBox({
-      prompt,
-      value: session.local[field],
-      placeHolder
-    });
-    if (value === undefined) {
+    await this.focusInlineEditor(session, field);
+  }
+
+  private metadataKeyFor(session: SessionRecord): string {
+    return session.sessionId || session.id;
+  }
+
+  private async focusInlineSearch(): Promise<void> {
+    await vscode.commands.executeCommand("workbench.view.extension.codexSessions");
+    try {
+      await vscode.commands.executeCommand(`${INLINE_SEARCH_VIEW_ID}.focus`);
+    } catch (error) {
+      this.output.appendLine(`[extension] inline search focus command failed: ${String(error)}`);
+    }
+    this.inlineSearchProvider.focusSearch();
+  }
+
+  private async focusInlineEditor(session: SessionRecord, field: MetadataField): Promise<void> {
+    await vscode.commands.executeCommand("workbench.view.extension.codexSessions");
+    try {
+      await vscode.commands.executeCommand(`${INLINE_SEARCH_VIEW_ID}.focus`);
+    } catch (error) {
+      this.output.appendLine(`[extension] inline editor focus command failed: ${String(error)}`);
+    }
+    this.inlineSearchProvider.beginEdit(session.sessionId || session.id, field);
+  }
+
+  private findSessionById(sessionId: string): SessionRecord | null {
+    const snapshots = [this.fullSnapshot, this.treeProvider.getSnapshot()].filter(Boolean) as RepositorySnapshot[];
+    for (const snapshot of snapshots) {
+      const session = snapshot.sessions.find((item) => item.sessionId === sessionId || item.id === sessionId);
+      if (session) {
+        return session;
+      }
+    }
+    return null;
+  }
+
+  private async openSessionById(sessionId: string, target: "official" | "details"): Promise<void> {
+    const session = this.findSessionById(sessionId);
+    if (!session) {
+      await vscode.window.showWarningMessage(t("sessionNotFoundMessage", { sessionId }));
+      return;
+    }
+    if (target === "details") {
+      await this.detailsProvider.open(session);
+      return;
+    }
+    await this.openPrimarySessionTarget(session);
+  }
+
+  private async saveMetadataById(sessionId: string, field: MetadataField, value: string): Promise<void> {
+    const session = this.findSessionById(sessionId);
+    if (!session) {
+      await vscode.window.showWarningMessage(t("sessionNotFoundMessage", { sessionId }));
       return;
     }
     const nextValue = value.trim();
@@ -521,77 +596,20 @@ class SessionManagerController {
       await vscode.window.showInformationMessage(t("sessionRenamedMessage", { title: nextValue || session.displayName }));
       return;
     }
-    await vscode.window.showInformationMessage(t("metadataSavedMessage", { title: session.displayName, label: placeHolder }));
+    await vscode.window.showInformationMessage(
+      t("metadataSavedMessage", { title: session.displayName, label: this.metadataFieldMessageLabel(field) })
+    );
   }
 
-  private metadataKeyFor(session: SessionRecord): string {
-    return session.sessionId || session.id;
-  }
-
-  private async searchAndOpenSession(): Promise<void> {
-    await this.runSafe(async () => {
-      const snapshot = await this.getFullSnapshotForSearch();
-      const sessions = snapshot.sessions;
-      if (sessions.length === 0) {
-        await vscode.window.showInformationMessage(t("noSessionsAvailable"));
-        return;
-      }
-
-      const items = sessions.map((session) => this.toSearchQuickPickItem(session));
-      const selected = await vscode.window.showQuickPick(items, {
-        title: t("searchSessionsTitle"),
-        placeHolder: t("searchSessionsPlaceholder"),
-        matchOnDescription: true,
-        matchOnDetail: true
-      });
-      if (!selected) {
-        return;
-      }
-
-      await this.openPrimarySessionTarget(selected.session);
-    });
-  }
-
-  private async getFullSnapshotForSearch(): Promise<RepositorySnapshot> {
-    if (this.fullSnapshot) {
-      return this.fullSnapshot;
+  private metadataFieldMessageLabel(field: MetadataField): string {
+    switch (field) {
+      case "alias":
+        return t("inlineAliasLabel");
+      case "projectTag":
+        return t("inlineProjectTagLabel");
+      case "note":
+        return t("inlineNoteLabel");
     }
-
-    if (await this.renderCachedSnapshotIfAvailable()) {
-      return this.fullSnapshot!;
-    }
-
-    await vscode.window.showInformationMessage(t("loadingSessionsForSearch"));
-    await this.refresh();
-    if (!this.fullSnapshot) {
-      throw new Error(t("noSessionsAvailable"));
-    }
-    return this.fullSnapshot;
-  }
-
-  private toSearchQuickPickItem(session: SessionRecord): SearchSessionQuickPickItem {
-    const stateLabels = [
-      session.archived ? t("archivedBadge") : "",
-      isSessionPinned(session) ? t("pinnedBadge") : "",
-      session.local.unread ? t("unreadBadge") : ""
-    ].filter(Boolean);
-    const state = stateLabels.length > 0 ? ` · ${stateLabels.join(" · ")}` : "";
-    const note = session.local.note ? `\n${t("noteLabel")}: ${session.local.note}` : "";
-    return {
-      label: session.displayName,
-      description: `${session.sourceLabel} · ${session.projectLabel}${state}`,
-      detail: [
-        session.preview,
-        session.cwd,
-        session.sessionId,
-        session.local.alias,
-        session.local.projectTag,
-        note
-      ]
-        .filter(Boolean)
-        .join("\n"),
-      session
-    };
   }
 
   private async openPrimarySessionTarget(session: SessionRecord): Promise<void> {

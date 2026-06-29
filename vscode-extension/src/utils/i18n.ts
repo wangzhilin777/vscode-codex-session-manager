@@ -23,6 +23,24 @@ type MessageKey =
   | "fallbackActive"
   | "forkStarted"
   | "inputSearchFilter"
+  | "inlineAliasLabel"
+  | "inlineCancelLabel"
+  | "inlineClearLabel"
+  | "inlineDetailsLabel"
+  | "inlineEditingPrefix"
+  | "inlineFilteredSummary"
+  | "inlineHideArchivedLabel"
+  | "inlineNoMatchesLabel"
+  | "inlineNoteLabel"
+  | "inlineOpenLabel"
+  | "inlineProjectTagLabel"
+  | "inlineRefreshLabel"
+  | "inlineRenameLabel"
+  | "inlineResultSummary"
+  | "inlineSaveLabel"
+  | "inlineSearchInPanelLabel"
+  | "inlineSearchTitle"
+  | "inlineShowArchivedLabel"
   | "loadingSessionsForSearch"
   | "metadataSavedMessage"
   | "missingOfficial"
@@ -51,6 +69,7 @@ type MessageKey =
   | "searchSessionsTitle"
   | "resumeStarted"
   | "sessionFileMissing"
+  | "sessionNotFoundMessage"
   | "showAllWorkspacesMessage"
   | "showCurrentWorkspaceMessage"
   | "sourceLabel"
@@ -94,6 +113,24 @@ const en: Record<MessageKey, string> = {
   fallbackActive: "fallback active",
   forkStarted: "Started Codex fork in the terminal.",
   inputSearchFilter: "Set a session search filter",
+  inlineAliasLabel: "alias",
+  inlineCancelLabel: "Cancel",
+  inlineClearLabel: "Clear",
+  inlineDetailsLabel: "Details",
+  inlineEditingPrefix: "Editing ",
+  inlineFilteredSummary: "{visible} matched / {total} total",
+  inlineHideArchivedLabel: "Hide Archived",
+  inlineNoMatchesLabel: "No sessions match this search.",
+  inlineNoteLabel: "note",
+  inlineOpenLabel: "Open",
+  inlineProjectTagLabel: "project tag",
+  inlineRefreshLabel: "Refresh",
+  inlineRenameLabel: "Rename",
+  inlineResultSummary: "{visible} visible / {total} total",
+  inlineSaveLabel: "Save",
+  inlineSearchInPanelLabel: "Search and edit sessions in this panel.",
+  inlineSearchTitle: "Search And Edit",
+  inlineShowArchivedLabel: "Show Archived",
   loadingSessionsForSearch: "No cache is available yet. Loading Codex sessions before search.",
   metadataSavedMessage: "Saved {label} for \"{title}\".",
   missingOfficial: "Official Codex VS Code extension was not detected. Opened the local details page instead.",
@@ -122,6 +159,7 @@ const en: Record<MessageKey, string> = {
   searchSessionsTitle: "Search Codex Sessions",
   resumeStarted: "Started Codex resume in the terminal.",
   sessionFileMissing: "This session has no local session file path.",
+  sessionNotFoundMessage: "Session {sessionId} was not found in the current cache. Refresh and try again.",
   showAllWorkspacesMessage: "Showing all workspaces.",
   showCurrentWorkspaceMessage: "Showing the current workspace.",
   sourceLabel: "Source",
@@ -166,6 +204,24 @@ const zh: Record<MessageKey, string> = {
   fallbackActive: "已启用兜底",
   forkStarted: "已在终端启动 Codex 派生。",
   inputSearchFilter: "设置会话搜索过滤",
+  inlineAliasLabel: "别名",
+  inlineCancelLabel: "取消",
+  inlineClearLabel: "清除",
+  inlineDetailsLabel: "详情",
+  inlineEditingPrefix: "正在编辑",
+  inlineFilteredSummary: "命中 {visible} 条 / 共 {total} 条",
+  inlineHideArchivedLabel: "隐藏归档",
+  inlineNoMatchesLabel: "没有匹配的会话。",
+  inlineNoteLabel: "备注",
+  inlineOpenLabel: "打开",
+  inlineProjectTagLabel: "项目标签",
+  inlineRefreshLabel: "刷新",
+  inlineRenameLabel: "重命名",
+  inlineResultSummary: "显示 {visible} 条 / 共 {total} 条",
+  inlineSaveLabel: "保存",
+  inlineSearchInPanelLabel: "可直接在这里搜索和编辑会话。",
+  inlineSearchTitle: "搜索与编辑",
+  inlineShowArchivedLabel: "显示归档",
   loadingSessionsForSearch: "当前还没有缓存，正在先加载 Codex 会话再搜索。",
   metadataSavedMessage: "已保存“{title}”的{label}。",
   missingOfficial: "未检测到官方 Codex VS Code 插件，已回退到本地详情页。",
@@ -194,6 +250,7 @@ const zh: Record<MessageKey, string> = {
   searchSessionsTitle: "搜索 Codex 会话",
   resumeStarted: "已在终端启动 Codex 继续会话。",
   sessionFileMissing: "这个会话没有本地会话文件路径。",
+  sessionNotFoundMessage: "当前缓存里没有找到会话 {sessionId}，请刷新后重试。",
   showAllWorkspacesMessage: "已显示全部工作区。",
   showCurrentWorkspaceMessage: "已显示本工作区。",
   sourceLabel: "来源",
