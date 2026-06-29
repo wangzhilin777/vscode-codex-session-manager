@@ -23,6 +23,20 @@ function listSourceKinds(settings: ExtensionSettings): SessionSourceKind[] {
   return kinds;
 }
 
+function hasThreadId(ids: ReadonlySet<string>, ...values: string[]): boolean {
+  return values.some((value) => !!value && ids.has(value));
+}
+
+function omitHintsForThreadIds(hints: Readonly<Record<string, string>>, ids: ReadonlySet<string>): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const [key, value] of Object.entries(hints)) {
+    if (!ids.has(key)) {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 export class SessionRepository {
   private readonly appServerClient: CodexAppServerClient;
   private readonly filesystemProvider: CodexFilesystemProvider;
@@ -59,8 +73,10 @@ export class SessionRepository {
   public async loadFull(settings: ExtensionSettings): Promise<RepositorySnapshot> {
     const currentRoots = workspaceRoots();
     const hints = this.filesystemProvider.getWorkspaceHints();
+    const desktopProjectlessThreadIds = this.filesystemProvider.getProjectlessThreadIds();
+    const workspaceAssignableHints = omitHintsForThreadIds(hints, desktopProjectlessThreadIds);
     const desktopWorkspaceRoots = this.filesystemProvider.getDesktopWorkspaceRoots();
-    const knownWorkspaceRoots = collectKnownWorkspaceRoots([...currentRoots, ...desktopWorkspaceRoots], hints);
+    const knownWorkspaceRoots = collectKnownWorkspaceRoots([...currentRoots, ...desktopWorkspaceRoots], workspaceAssignableHints);
     const desktopPinnedThreadIds = this.filesystemProvider.getPinnedThreadIds();
     const metadataById = this.metadataStore.getAll();
     const cliAvailable = await this.cliService.checkAvailability();
@@ -124,13 +140,19 @@ export class SessionRepository {
       .map((raw) => {
         const localMetadata = metadataForRawSession(raw, metadataById);
         const desktopPinned = desktopPinnedThreadIds.has(raw.sessionId) || desktopPinnedThreadIds.has(raw.id);
+        const desktopProjectless = hasThreadId(desktopProjectlessThreadIds, raw.sessionId, raw.id);
+        const workspaceHint = desktopProjectless
+          ? ""
+          : resolveWorkspaceHint(raw.id, raw.cwd, workspaceAssignableHints) ||
+            resolveWorkspaceHint(raw.sessionId, raw.cwd, workspaceAssignableHints);
         return toSessionRecord(
           raw,
           localMetadata,
           currentRoots,
-          resolveWorkspaceHint(raw.id, raw.cwd, hints),
+          workspaceHint,
           knownWorkspaceRoots,
-          desktopPinned
+          desktopPinned,
+          desktopProjectless
         );
       })
       .sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0));
@@ -142,6 +164,7 @@ export class SessionRepository {
         `idDeduped=${idDeduped.length}`,
         `deduped=${rawDeduped.length}`,
         `archived=${archivedCount}`,
+        `projectless=${sessions.filter((session) => session.desktopProjectless).length}`,
         `full=${sessions.length}`
       ].join(" ")
     );
@@ -178,20 +201,30 @@ export class SessionRepository {
   public rehydrateSnapshot(snapshot: RepositorySnapshot): RepositorySnapshot {
     const currentRoots = workspaceRoots();
     const metadataById = this.metadataStore.getAll();
+    const desktopProjectlessThreadIds = this.filesystemProvider.getProjectlessThreadIds();
     const desktopWorkspaceRoots = this.filesystemProvider.getDesktopWorkspaceRoots();
-    const knownWorkspaceRoots = collectKnownWorkspaceRoots([...currentRoots, ...desktopWorkspaceRoots], {}, snapshot.sessions);
+    const knownWorkspaceRoots = collectKnownWorkspaceRoots(
+      [...currentRoots, ...desktopWorkspaceRoots],
+      {},
+      snapshot.sessions.filter(
+        (session) => !session.desktopProjectless && !hasThreadId(desktopProjectlessThreadIds, session.sessionId, session.id)
+      )
+    );
     const desktopPinnedThreadIds = this.filesystemProvider.getPinnedThreadIds();
     const sessions = snapshot.sessions
       .map((session) => {
         const localMetadata = metadataForRawSession(session, metadataById);
         const desktopPinned = desktopPinnedThreadIds.has(session.sessionId) || desktopPinnedThreadIds.has(session.id);
+        const desktopProjectless =
+          session.desktopProjectless || hasThreadId(desktopProjectlessThreadIds, session.sessionId, session.id);
         return toSessionRecord(
           session,
           localMetadata,
           currentRoots,
-          session.workspaceAssigned ? session.workspaceRoot || session.cwd : "",
+          !desktopProjectless && session.workspaceAssigned ? session.workspaceRoot || session.cwd : "",
           knownWorkspaceRoots,
-          desktopPinned
+          desktopPinned,
+          desktopProjectless
         );
       })
       .sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0));

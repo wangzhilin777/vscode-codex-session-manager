@@ -127,15 +127,17 @@ export function toSessionRecord(
   workspaceRoots: readonly string[],
   workspaceHint: string,
   knownWorkspaceRoots: readonly string[] = workspaceRoots,
-  desktopPinned = false
+  desktopPinned = false,
+  desktopProjectless = false
 ): SessionRecord {
-  const preferredRoot = pickLongestMatchingRoot(raw.cwd, workspaceRoots);
-  const normalizedHint = normalizeFsPath(workspaceHint);
-  const inferredRoot = pickLongestMatchingRoot(raw.cwd, knownWorkspaceRoots);
-  const assignedRoot = preferredRoot || inferredRoot || workspaceHint;
+  const canAssignWorkspace = !desktopProjectless;
+  const preferredRoot = canAssignWorkspace ? pickLongestMatchingRoot(raw.cwd, workspaceRoots) : "";
+  const normalizedHint = canAssignWorkspace ? normalizeFsPath(workspaceHint) : "";
+  const inferredRoot = canAssignWorkspace ? pickLongestMatchingRoot(raw.cwd, knownWorkspaceRoots) : "";
+  const assignedRoot = canAssignWorkspace ? preferredRoot || inferredRoot || workspaceHint : "";
   const resolvedRoot = assignedRoot || raw.cwd;
-  const currentProject = !!preferredRoot;
-  const workspaceAssigned = !!assignedRoot || !!normalizedHint;
+  const currentProject = canAssignWorkspace && !!preferredRoot;
+  const workspaceAssigned = canAssignWorkspace && (!!assignedRoot || !!normalizedHint);
   const tagged = local.projectTag.trim();
   const projectKey = projectKeyFor(tagged, resolvedRoot);
   const projectLabel = tagged || basenameOrPath(resolvedRoot) || UNKNOWN_PROJECT_LABEL;
@@ -151,6 +153,7 @@ export function toSessionRecord(
     workspaceRoot: toDisplayPath(resolvedRoot),
     workspaceAssigned,
     desktopPinned,
+    desktopProjectless,
     projectKey,
     projectLabel,
     projectDescription,

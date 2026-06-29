@@ -31,6 +31,7 @@ function makeSession(patch: Partial<SessionRecord>): SessionRecord {
     workspaceRoot: "",
     workspaceAssigned: false,
     desktopPinned: false,
+    desktopProjectless: false,
     projectKey: "",
     projectLabel: "",
     projectDescription: "",

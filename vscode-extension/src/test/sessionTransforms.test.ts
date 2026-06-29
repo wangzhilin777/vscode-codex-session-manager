@@ -81,6 +81,25 @@ test("toSessionRecord merges sessions into a known workspace root even without a
   assert.equal(record.workspaceRoot, "E:\\Workspace\\cachelocal");
 });
 
+test("toSessionRecord keeps desktop projectless sessions outside workspace buckets", () => {
+  configureLanguage("en");
+  const record = toSessionRecord(
+    makeRaw("projectless", "E:\\Workspace\\VSCode\\test"),
+    { alias: "", projectTag: "", note: "" },
+    ["E:\\Workspace\\VSCode\\test"],
+    "E:\\Workspace\\VSCode\\test",
+    ["E:\\Workspace\\VSCode\\test"],
+    false,
+    true
+  );
+
+  assert.equal(record.currentProject, false);
+  assert.equal(record.workspaceAssigned, false);
+  assert.equal(record.desktopProjectless, true);
+  assert.equal(record.workspaceRoot, "E:\\Workspace\\VSCode\\test");
+  assert.deepEqual(buildGroups([record]).map((group) => group.kind), ["noWorkspace"]);
+});
+
 test("toSessionRecord normalizes markdown-style titles", () => {
   configureLanguage("en");
   const raw = makeRaw("one", "E:\\Workspace\\VSCode\\test");

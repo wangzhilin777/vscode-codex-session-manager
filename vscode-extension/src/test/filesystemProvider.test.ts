@@ -138,6 +138,31 @@ test("filesystem provider accepts a single desktop pinned thread id", () => {
   assert.deepEqual([...pinned], ["session-a"]);
 });
 
+test("filesystem provider reads desktop projectless thread ids from global state", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-manager-"));
+  fs.writeFileSync(
+    path.join(root, ".codex-global-state.json"),
+    JSON.stringify({
+      "projectless-thread-ids": ["session-a"],
+      "thread-projectless-output-directories": {
+        "session-b": "C:\\Users\\ChowYu\\Documents\\Codex\\outputs"
+      }
+    }),
+    "utf8"
+  );
+
+  const provider = new CodexFilesystemProvider({
+    codexHome: root,
+    logger: makeLogger()
+  });
+
+  const projectless = provider.getProjectlessThreadIds();
+
+  assert.equal(projectless.has("session-a"), true);
+  assert.equal(projectless.has("session-b"), true);
+  assert.equal(projectless.size, 2);
+});
+
 test("filesystem provider reads desktop workspace roots from global state", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-session-manager-"));
   fs.writeFileSync(

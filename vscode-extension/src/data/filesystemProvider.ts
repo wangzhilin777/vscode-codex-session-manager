@@ -340,6 +340,20 @@ export class CodexFilesystemProvider {
     return new Set(arrayOfStrings(pinned));
   }
 
+  public getProjectlessThreadIds(): Set<string> {
+    const globalState = readJsonFile<Record<string, unknown>>(path.join(this.codexHome, ".codex-global-state.json"), {});
+    const projectless = new Set(arrayOfStrings(globalState["projectless-thread-ids"]));
+    const outputDirectories = globalState["thread-projectless-output-directories"];
+    if (outputDirectories && typeof outputDirectories === "object" && !Array.isArray(outputDirectories)) {
+      for (const key of Object.keys(outputDirectories)) {
+        if (key.trim()) {
+          projectless.add(key);
+        }
+      }
+    }
+    return projectless;
+  }
+
   public listSessions(): RawSessionRecord[] {
     const indexFile = path.join(this.codexHome, "session_index.jsonl");
     const sessionsDir = path.join(this.codexHome, "sessions");

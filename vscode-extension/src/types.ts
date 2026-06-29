@@ -107,6 +107,7 @@ export interface SessionRecord extends RawSessionRecord {
   workspaceRoot: string;
   workspaceAssigned: boolean;
   desktopPinned: boolean;
+  desktopProjectless: boolean;
   projectKey: string;
   projectLabel: string;
   projectDescription: string;
